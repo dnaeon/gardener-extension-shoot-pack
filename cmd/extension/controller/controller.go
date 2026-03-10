@@ -8,15 +8,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"slices"
 	"strconv"
 	"time"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
+	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/controllerutils"
 	glogger "github.com/gardener/gardener/pkg/logger"
+	"github.com/go-logr/logr"
 	"github.com/urfave/cli/v3"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -55,6 +58,18 @@ type flags struct {
 	clientConnQPS             float32
 	clientConnBurst           int32
 
+	// webhook options
+	webhookServerHost           string
+	webhookServerPort           int
+	webhookServerCertDir        string
+	webhookServerCertName       string
+	webhookServerKeyName        string
+	webhookConfigNamespace      string
+	webhookConfigMode           string
+	webhookConfigURL            string
+	webhookConfigServicePort    int
+	webhookConfigOwnerNamespace string
+
 	// The following flags are meant to be specified by the Helm chart,
 	// which gardenlet will invoke during deployment. The value of each flag
 	// is derived from a list of extra values, which gardenlet passes to
@@ -65,6 +80,12 @@ type flags struct {
 	// https://github.com/gardener/gardener/blob/d5071c800378616eb6bb2c7662b4b28f4cfe7406/pkg/gardenlet/controller/controllerinstallation/controllerinstallation/reconciler.go#L236-L263
 	gardenerVersion       string
 	gardenletFeatureGates map[featuregate.Feature]bool
+}
+
+// getLogger returns a [logr.Logger] based on the specified command-line
+// options.
+func (f *flags) getLogger() logr.Logger {
+	return glogger.MustNewZapLogger(f.zapLogLevel, f.zapLogFormat)
 }
 
 // getManager creates a new [ctrl.Manager] based on the parsed [flags].
@@ -303,9 +324,98 @@ func New() *cli.Command {
 					return nil
 				},
 			},
+			&cli.StringFlag{
+				Name:        "webhook-server-host",
+				Usage:       "address on which the webhook server listens on",
+				Sources:     cli.EnvVars("WEBHOOK_SERVER_HOST"),
+				Destination: &flags.webhookServerHost,
+			},
+			&cli.IntFlag{
+				Name:        "webhook-server-port",
+				Value:       9443,
+				Usage:       "port on which the webhook server listens on",
+				Sources:     cli.EnvVars("WEBHOOK_SERVER_PORT"),
+				Destination: &flags.webhookServerPort,
+			},
+			&cli.StringFlag{
+				Name:        "webhook-server-cert-dir",
+				Usage:       "path to directory, which contains the server key and cert",
+				Sources:     cli.EnvVars("WEBHOOK_SERVER_CERT_DIR"),
+				Destination: &flags.webhookServerCertDir,
+			},
+			&cli.StringFlag{
+				Name:        "webhook-server-cert-name",
+				Value:       "tls.crt",
+				Usage:       "the server certificate file name",
+				Sources:     cli.EnvVars("WEBHOOK_SERVER_CERT_NAME"),
+				Destination: &flags.webhookServerCertName,
+			},
+			&cli.StringFlag{
+				Name:        "webhook-server-key-name",
+				Value:       "tls.key",
+				Usage:       "the server certificate key file name",
+				Sources:     cli.EnvVars("WEBHOOK_SERVER_KEY_NAME"),
+				Destination: &flags.webhookServerKeyName,
+			},
+			&cli.StringFlag{
+				Name:        "webhook-config-namespace",
+				Value:       "garden",
+				Usage:       "namespace where the webhook CA bundle, services, etc. are created",
+				Sources:     cli.EnvVars("WEBHOOK_CONFIG_NAMESPACE"),
+				Destination: &flags.webhookConfigNamespace,
+			},
+			&cli.StringFlag{
+				Name:    "webhook-config-mode",
+				Value:   string(extensionswebhook.ModeService),
+				Usage:   "one of service, url or url-service",
+				Sources: cli.EnvVars("WEBHOOK_CONFIG_MODE"),
+				Validator: func(val string) error {
+					supportedModes := []string{
+						string(extensionswebhook.ModeService),
+						string(extensionswebhook.ModeURL),
+						string(extensionswebhook.ModeURLWithServiceName),
+					}
+					if !slices.Contains(supportedModes, val) {
+						return errors.New("invalid webhook config mode specified")
+					}
+
+					return nil
+				},
+				Destination: &flags.webhookConfigMode,
+			},
+			&cli.StringFlag{
+				Name:    "webhook-config-url",
+				Usage:   "URL at which to find the webhook server, used with `url' mode only",
+				Sources: cli.EnvVars("WEBHOOK_CONFIG_URL"),
+				Validator: func(val string) error {
+					_, err := url.Parse(val)
+
+					return err
+				},
+				Destination: &flags.webhookConfigURL,
+			},
+			&cli.IntFlag{
+				Name:    "webhook-config-service-port",
+				Usage:   "service port for the webhook when running in `service' mode",
+				Sources: cli.EnvVars("WEBHOOK_CONFIG_SERVICE_PORT"),
+				Validator: func(val int) error {
+					if val <= 0 {
+						return errors.New("port cannot be negative")
+					}
+
+					return nil
+				},
+				Destination: &flags.webhookConfigServicePort,
+			},
+			&cli.StringFlag{
+				Name:        "webhook-config-owner-namespace",
+				Usage:       "namespace which is used as the owner reference for webhook registration",
+				Sources:     cli.EnvVars("WEBHOOK_CONFIG_OWNER_NAMESPACE"),
+				Destination: &flags.webhookConfigOwnerNamespace,
+			},
 		},
 		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
-			ctrllog.SetLogger(glogger.MustNewZapLogger(flags.zapLogLevel, flags.zapLogFormat))
+			ctrllog.SetLogger(flags.getLogger())
 			newCtx := context.WithValue(ctx, flagsKey{}, &flags)
 
 			return newCtx, nil
