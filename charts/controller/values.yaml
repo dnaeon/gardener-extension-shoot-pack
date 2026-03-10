@@ -51,6 +51,9 @@ extension:
   leader_election:
     enabled: true
     election_id: gardener-extension-shoot-pack-leader-election
+  # Webhook server settings
+  webhook:
+    port: 7080
 # Extra values provided by gardenlet during extension deployment.
 #
 # See the links below for more details.
@@ -119,7 +122,7 @@ securityContext:
   capabilities:
     drop:
       - ALL
-  readOnlyRootFilesystem: true
+  readOnlyRootFilesystem: false
   runAsNonRoot: true
   runAsUser: 1000
 # Service settings.
@@ -133,9 +136,6 @@ service:
   # Service type.
   # See: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
   type: ClusterIP
-  # Service port.
-  # See: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
-  port: 80
 # Resources limits and requests
 #
 # Check the following link for more details.
