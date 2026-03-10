@@ -29,7 +29,7 @@ var FS embed.FS
 
 // Collection is a set of [Pack] items.
 type Collection struct {
-	// Packs represent the set of packs in the collection.
+	// packs represent the set of packs in the collection.
 	Packs []Pack
 
 	// fileSystem is the [fs.FS] from which the collection was created.
@@ -109,12 +109,21 @@ func New(fileSystem fs.FS) (*Collection, error) {
 			return nil, fmt.Errorf("unable to list pack resources for pack %s: %w", packDir, err)
 		}
 
+		resources := make([]Resource, 0)
+		for _, resourcePath := range resourcePaths {
+			resource := Resource{
+				Path:       resourcePath,
+				fileSystem: fileSystem,
+			}
+			resources = append(resources, resource)
+		}
+
 		pack := Pack{
-			Name:          packName,
-			Version:       packVersion,
-			Description:   string(desc),
-			Namespace:     string(namespace),
-			resourcePaths: resourcePaths,
+			Name:        packName,
+			Version:     packVersion,
+			Description: string(desc),
+			Namespace:   string(namespace),
+			Resources:   resources,
 		}
 
 		packs = append(packs, pack)
@@ -142,12 +151,20 @@ type Pack struct {
 	// Description provides a short summary of the pack.
 	Description string
 
-	// resourcePaths contains the paths to the pack resources.
-	resourcePaths []string
+	// Resources contains the set of resources provided by the pack.
+	Resources []Resource
 }
 
 // resource represents a resource from a [Pack].
 type Resource struct {
 	// Path represents the path to the resource.
 	Path string
+
+	// fileSystem is the [fs.FS] which contains the resource.
+	fileSystem fs.FS
+}
+
+// Read reads the resource and returns its contents.
+func (r *Resource) Read() ([]byte, error) {
+	return fs.ReadFile(r.fileSystem, r.Path)
 }
