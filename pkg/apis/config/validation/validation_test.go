@@ -13,21 +13,57 @@ import (
 )
 
 var _ = Describe("Validation Tests", Ordered, func() {
-	It("should detect invalid config", func() {
+	It("should fail on empty config", func() {
 		cfg := config.PackConfig{}
 		err := validation.Validate(cfg)
 		Expect(err).Should(HaveOccurred())
 	})
 
-	It("should successfully validate correct config", func() {
+	It("should fail with an empty pack name", func() {
 		cfg := config.PackConfig{
 			Spec: config.PackConfigSpec{
-				Foo: "bar",
+				Packs: []config.Pack{
+					{
+						Version: "42.0",
+					},
+				},
 			},
 		}
 		err := validation.Validate(cfg)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(err).Should(HaveOccurred())
 	})
 
-	// TODO(user): additional tests
+	It("should fail with an empty pack version", func() {
+		cfg := config.PackConfig{
+			Spec: config.PackConfigSpec{
+				Packs: []config.Pack{
+					{
+						Name: "foobar",
+					},
+				},
+			},
+		}
+		err := validation.Validate(cfg)
+		Expect(err).Should(HaveOccurred())
+	})
+
+	It("should successfully validate extension config", func() {
+		cfg := config.PackConfig{
+			Spec: config.PackConfigSpec{
+				Packs: []config.Pack{
+					{
+						Name:    "foo",
+						Version: "1.2.3",
+					},
+					{
+						Name:    "bar",
+						Version: "42.0",
+					},
+				},
+			},
+		}
+
+		err := validation.Validate(cfg)
+		Expect(err).NotTo(HaveOccurred())
+	})
 })
