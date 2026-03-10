@@ -8,12 +8,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Pack describes a pack.
+type Pack struct {
+	// Name specifies the name of the pack.
+	Name string
+
+	// Version specifies the version of the pack.
+	Version string
+}
+
 // PackConfigSpec defines the desired state of [PackConfig]
 type PackConfigSpec struct {
-	// Foo is foo
-	Foo string
-
-	// TODO(user): insert additional spec fields
+	// Packs specifies the list of packs to be installed.
+	Packs []Pack
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
