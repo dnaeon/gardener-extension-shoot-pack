@@ -14,14 +14,27 @@ import (
 func Validate(cfg config.PackConfig) error {
 	allErrs := make(field.ErrorList, 0)
 
-	if cfg.Spec.Foo == "" {
+	if len(cfg.Spec.Packs) == 0 {
 		allErrs = append(
 			allErrs,
-			field.Required(field.NewPath("spec.foo"), "empty value specified"),
+			field.Required(field.NewPath("spec.packs"), "no packs specified"),
 		)
 	}
 
-	// TODO(user): validate any other config setting
+	for idx, pack := range cfg.Spec.Packs {
+		if pack.Name == "" {
+			allErrs = append(
+				allErrs,
+				field.Required(field.NewPath("spec.packs").Index(idx).Child("name"), "empty pack name"),
+			)
+		}
+		if pack.Version == "" {
+			allErrs = append(
+				allErrs,
+				field.Required(field.NewPath("spec.packs").Index(idx).Child("version"), "empty pack version"),
+			)
+		}
+	}
 
 	return allErrs.ToAggregate()
 }
