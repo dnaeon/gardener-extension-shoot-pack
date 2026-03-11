@@ -172,6 +172,10 @@ func New(fileSystem fs.FS) (*Collection, error) {
 		fileSystem: fileSystem,
 	}
 
+	if err := c.Verify(); err != nil {
+		return nil, fmt.Errorf("failed to verify collection packs: %w", err)
+	}
+
 	return c, nil
 }
 
