@@ -190,6 +190,8 @@ func New(fileSystem fs.FS) (*Collection, error) {
 			Description: string(desc),
 			Namespace:   strings.TrimSpace(string(namespace)),
 			Resources:   resources,
+			baseDir:     packDir,
+			fileSystem:  fileSystem,
 		}
 
 		packs = append(packs, pack)
@@ -223,6 +225,12 @@ type Pack struct {
 
 	// Resources contains the set of resources provided by the pack.
 	Resources []Resource `json:"resources,omitzero"`
+
+	// baseDir is the base directory of the pack in the [fs.FS].
+	baseDir string
+
+	// fileSystem is the [fs.FS] which contains the pack.
+	fileSystem fs.FS
 }
 
 // Verify verifies the checksums of pack resources.
@@ -255,6 +263,11 @@ func (p *Pack) Verify() error {
 	}
 
 	return utilerrors.NewAggregate(allErrs)
+}
+
+// ReadFile reads a file from the pack base directory.
+func (p *Pack) ReadFile(path string) ([]byte, error) {
+	return fs.ReadFile(p.fileSystem, filepath.Join(p.baseDir, path))
 }
 
 // Resource represents a resource from a [Pack].
