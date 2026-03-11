@@ -52,6 +52,9 @@ type Collection struct {
 
 	// fileSystem is the [fs.FS] from which the collection was created.
 	fileSystem fs.FS
+
+	// skipVerify will skip the collection verification when set to true.
+	skipVerify bool
 }
 
 // Verify verifies the checksums of all packs in the [Collection].
@@ -90,6 +93,19 @@ func (c *Collection) GetPack(name, version string) (*Pack, error) {
 	return nil, nil
 }
 
+// Option is a function which configures a pack [Collection].
+type Option func(c *Collection)
+
+// WithSkipVerify is an [Option], which skips verification of the packs
+// contained within a [Collection].
+func WithSkipVerify(val bool) Option {
+	opt := func(c *Collection) {
+		c.skipVerify = val
+	}
+
+	return opt
+}
+
 // New creates a new [Collection] from the given [fs.FS].
 // The structure of the filesystem containing the packs follows this
 // convention.
@@ -115,7 +131,7 @@ func (c *Collection) GetPack(name, version string) (*Pack, error) {
 //	      └── 9.0.3
 //	      ├── pvc.yaml
 //	      └── statefulset.yaml
-func New(fileSystem fs.FS) (*Collection, error) {
+func New(fileSystem fs.FS, opts ...Option) (*Collection, error) {
 	topLevelDirs, err := fs.Glob(fileSystem, "packs/*/*")
 	if err != nil {
 		return nil, err
@@ -200,10 +216,17 @@ func New(fileSystem fs.FS) (*Collection, error) {
 	c := &Collection{
 		Packs:      packs,
 		fileSystem: fileSystem,
+		skipVerify: false,
 	}
 
-	if err := c.Verify(); err != nil {
-		return nil, err
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	if !c.skipVerify {
+		if err := c.Verify(); err != nil {
+			return nil, err
+		}
 	}
 
 	return c, nil
