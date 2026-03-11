@@ -206,6 +206,26 @@ func (p *Pack) Verify() error {
 		}
 	}
 
+	if p.Name == "" {
+		allErrs = append(allErrs, errors.New("missing pack name"))
+	}
+
+	if p.Version == "" {
+		allErrs = append(allErrs, fmt.Errorf("missing version for pack %s", p.Name))
+	}
+
+	if p.Description == "" {
+		allErrs = append(allErrs, fmt.Errorf("missing description for pack %s@%s", p.Name, p.Version))
+	}
+
+	if p.Namespace == "" {
+		allErrs = append(allErrs, fmt.Errorf("missing namespace for pack %s@%s", p.Name, p.Version))
+	}
+
+	if len(p.Resources) == 0 {
+		allErrs = append(allErrs, fmt.Errorf("no resources in pack %s@%s", p.Name, p.Version))
+	}
+
 	return utilerrors.NewAggregate(allErrs)
 }
 
