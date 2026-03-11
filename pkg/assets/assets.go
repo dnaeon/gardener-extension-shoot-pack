@@ -24,6 +24,8 @@ const (
 
 // FS is an [embed.FS], which bundles the builtin packs.
 //
+//go:embed packs/*/*/.DESC
+//go:embed packs/*/*/.NAMESPACE
 //go:embed packs/*/*/*.yaml
 var FS embed.FS
 
@@ -52,20 +54,14 @@ type Collection struct {
 // packs
 // ├── postgres
 // │   ├── 17
-// │   │   ├── .DESC
-// │   │   ├── .NAMESPACE
 // │   │   ├── serviceaccount.yaml
 // │   │   └── statefulset.yaml
 // │   └── 18
-// │       ├── .DESC
-// │       ├── .NAMESPACE
 // │       ├── serviceaccount.yaml
 // │       └── statefulset.yaml
 // └── valkey
 //
 //	└── 9.0.3
-//	    ├── .DESC
-//	    ├── .NAMESPACE
 //	    ├── pvc.yaml
 //	    └── statefulset.yaml
 func New(fileSystem fs.FS) (*Collection, error) {
@@ -90,25 +86,28 @@ func New(fileSystem fs.FS) (*Collection, error) {
 			continue
 		}
 
+		packName := filepath.Base(filepath.Dir(packDir))
+		packVersion := filepath.Base(packDir)
+
 		descPath := filepath.Join(packDir, metaFileDesc)
 		desc, err := fs.ReadFile(fileSystem, descPath)
 		if err != nil {
-			return nil, fmt.Errorf("unable to read description file for pack %s: %w", packDir, err)
+			return nil, fmt.Errorf("unable to read description file for pack %s@%s: %w", packName, packVersion, err)
 		}
 
 		namespacePath := filepath.Join(packDir, metaFileNamespace)
 		namespace, err := fs.ReadFile(fileSystem, namespacePath)
 		if err != nil {
-			return nil, fmt.Errorf("unable to read namespace file for pack %s: %w", packDir, err)
+			return nil, fmt.Errorf("unable to read namespace file for pack %s@%s: %w", packName, packVersion, err)
 		}
 
-		packName := filepath.Base(filepath.Dir(packDir))
-		packVersion := filepath.Base(packDir)
 		resourcePaths, err := fs.Glob(fileSystem, fmt.Sprintf("%s/*.yaml", packDir))
 		if err != nil {
-			return nil, fmt.Errorf("unable to list pack resources for pack %s: %w", packDir, err)
+			return nil, fmt.Errorf("unable to list resources for pack %s@%s: %w", packName, packVersion, err)
 		}
 
+		// TODO(dnaeon): verify the sha256sum of the file before including it in the pack
+		// TODO(dnaeon): error out if a resource does not have a sha256sum
 		resources := make([]Resource, 0)
 		for _, resourcePath := range resourcePaths {
 			resource := Resource{
