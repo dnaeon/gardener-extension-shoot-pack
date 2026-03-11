@@ -16,6 +16,8 @@ import (
 	"io/fs"
 	"path/filepath"
 	"strings"
+
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
 // MetaFile represents a metadata file in a pack.
@@ -178,6 +180,18 @@ type Pack struct {
 
 	// Resources contains the set of resources provided by the pack.
 	Resources []Resource
+}
+
+// Verify verifies the checksums of pack resources.
+func (p *Pack) Verify() error {
+	allErrs := make([]error, 0)
+	for _, resource := range p.Resources {
+		if err := resource.Verify(); err != nil {
+			allErrs = append(allErrs, err)
+		}
+	}
+
+	return utilerrors.NewAggregate(allErrs)
 }
 
 // Resource represents a resource from a [Pack].
