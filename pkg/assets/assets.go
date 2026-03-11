@@ -48,7 +48,7 @@ var FS embed.FS
 // Collection is a set of [Pack] items.
 type Collection struct {
 	// packs represent the set of packs in the collection.
-	Packs []Pack `json:"packs,omitzero"`
+	Packs []*Pack `json:"packs,omitzero"`
 
 	// fileSystem is the [fs.FS] from which the collection was created.
 	fileSystem fs.FS
@@ -64,6 +64,30 @@ func (c *Collection) Verify() error {
 	}
 
 	return utilerrors.NewAggregate(allErrs)
+}
+
+// PackExists is predicate which returns true if a [Pack] with the given name
+// and version exists in the [Collection], otherwise it returns false.
+func (c *Collection) PackExists(name, version string) bool {
+	for _, pack := range c.Packs {
+		if name == pack.Name && version == pack.Version {
+			return true
+		}
+	}
+
+	return false
+}
+
+// GetPack returns the [Pack] with the given name and version, if it exists in
+// the [Collection].
+func (c *Collection) GetPack(name, version string) (*Pack, error) {
+	for _, pack := range c.Packs {
+		if name == pack.Name && version == pack.Version {
+			return pack, nil
+		}
+	}
+
+	return nil, nil
 }
 
 // New creates a new [Collection] from the given [fs.FS].
@@ -97,7 +121,7 @@ func New(fileSystem fs.FS) (*Collection, error) {
 		return nil, err
 	}
 
-	packs := make([]Pack, 0)
+	packs := make([]*Pack, 0)
 	for _, packDir := range topLevelDirs {
 		// Skip non-directory entries, as these don't represent valid packs.
 		item, err := fileSystem.Open(packDir)
@@ -160,7 +184,7 @@ func New(fileSystem fs.FS) (*Collection, error) {
 			resources = append(resources, resource)
 		}
 
-		pack := Pack{
+		pack := &Pack{
 			Name:        packName,
 			Version:     packVersion,
 			Description: string(desc),
