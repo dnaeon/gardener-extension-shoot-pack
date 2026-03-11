@@ -66,19 +66,18 @@ type Collection struct {
 // The following example shows a filesystem with 3 packs in it -
 // postgres@17, postgres@18, valkey@9.0.3
 //
-// packs
-// ├── postgres
-// │   ├── 17
-// │   │   ├── serviceaccount.yaml
-// │   │   └── statefulset.yaml
-// │   └── 18
-// │       ├── serviceaccount.yaml
-// │       └── statefulset.yaml
-// └── valkey
-//
-//	└── 9.0.3
-//	    ├── pvc.yaml
-//	    └── statefulset.yaml
+//	packs
+//	├── postgres
+//	│   ├── 17
+//	│   │   ├── serviceaccount.yaml
+//	│   │   └── statefulset.yaml
+//	│   └── 18
+//	│       ├── serviceaccount.yaml
+//	│       └── statefulset.yaml
+//	└── valkey
+//	      └── 9.0.3
+//	      ├── pvc.yaml
+//	      └── statefulset.yaml
 func New(fileSystem fs.FS) (*Collection, error) {
 	topLevelDirs, err := fs.Glob(fileSystem, "packs/*/*")
 	if err != nil {
@@ -235,8 +234,8 @@ func (r *Resource) Verify() error {
 // The structure of the sums is expected to follow the conventions used by the
 // GNU coreutils tools such as sha256sum(1).
 //
-// <sha256> /path/to/file/foo
-// <sha256> /path/to/file/bar
+//	<sha256> /path/to/file/foo
+//	<sha256> /path/to/file/bar
 func SumsFromReader(r io.Reader) (map[string]string, error) {
 	sums := make(map[string]string)
 	scanner := bufio.NewReader(r)
