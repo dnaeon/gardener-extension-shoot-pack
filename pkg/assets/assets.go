@@ -47,7 +47,7 @@ var FS embed.FS
 // Collection is a set of [Pack] items.
 type Collection struct {
 	// packs represent the set of packs in the collection.
-	Packs []Pack
+	Packs []Pack `json:"packs,omitzero"`
 
 	// fileSystem is the [fs.FS] from which the collection was created.
 	fileSystem fs.FS
@@ -182,19 +182,19 @@ func New(fileSystem fs.FS) (*Collection, error) {
 // Pack reprensets a a collection of Kubernetes resources
 type Pack struct {
 	// Name specifies the name of the pack.
-	Name string
+	Name string `json:"name,omitzero"`
 
 	// Version specifies the pack version.
-	Version string
+	Version string `json:"version,omitzero"`
 
 	// Namespace specifies the namespace in which resources will be deployed.
-	Namespace string
+	Namespace string `json:"namespace,omitzero"`
 
 	// Description provides a short summary of the pack.
-	Description string
+	Description string `json:"description,omitzero"`
 
 	// Resources contains the set of resources provided by the pack.
-	Resources []Resource
+	Resources []Resource `json:"resources,omitzero"`
 }
 
 // Verify verifies the checksums of pack resources.
@@ -212,10 +212,10 @@ func (p *Pack) Verify() error {
 // Resource represents a resource from a [Pack].
 type Resource struct {
 	// Path represents the path to the resource.
-	Path string
+	Path string `json:"path,omitzero"`
 
 	// SHA256 represents the SHA256 checksum of the resource.
-	SHA256 string
+	SHA256 string `json:"sha256,omitzero"`
 
 	// fileSystem is the [fs.FS] which contains the resource.
 	fileSystem fs.FS
