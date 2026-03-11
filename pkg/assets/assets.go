@@ -41,6 +41,7 @@ const (
 //
 //go:embed packs/*/*/.DESC
 //go:embed packs/*/*/.NAMESPACE
+//go:embed packs/*/*/.SUMS
 //go:embed packs/*/*/*.yaml
 var FS embed.FS
 
@@ -176,7 +177,7 @@ func New(fileSystem fs.FS) (*Collection, error) {
 	}
 
 	if err := c.Verify(); err != nil {
-		return nil, fmt.Errorf("failed to verify collection packs: %w", err)
+		return nil, err
 	}
 
 	return c, nil
@@ -293,7 +294,7 @@ func SumsFromReader(r io.Reader) (map[string]string, error) {
 			continue
 		}
 
-		items := strings.Split(line, " ")
+		items := strings.Fields(line)
 		if len(items) != 2 {
 			return nil, fmt.Errorf("invalid sums file entry %q", line)
 		}
