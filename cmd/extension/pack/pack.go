@@ -29,6 +29,7 @@ func New() *cli.Command {
 				Aliases: []string{"ls"},
 				Flags: []cli.Flag{
 					outputFormatFlag,
+					skipVerifyFlag,
 				},
 				Action: runPackList,
 			},
@@ -38,6 +39,7 @@ func New() *cli.Command {
 				Aliases: []string{"f"},
 				Flags: []cli.Flag{
 					outputFormatFlag,
+					skipVerifyFlag,
 					&cli.StringFlag{
 						Name:     "name",
 						Usage:    "name of the pack",
@@ -58,6 +60,7 @@ func New() *cli.Command {
 				Usage:   "print checksums of a pack",
 				Aliases: []string{"s"},
 				Flags: []cli.Flag{
+					skipVerifyFlag,
 					&cli.StringFlag{
 						Name:     "name",
 						Usage:    "name of the pack",
@@ -81,7 +84,8 @@ func New() *cli.Command {
 
 // runPackList runs the command for listing packs.
 func runPackList(ctx context.Context, c *cli.Command) error {
-	collection, err := assets.New(assets.FS)
+	skipVerify := c.Bool(skipVerifyFlagName)
+	collection, err := assets.New(assets.FS, assets.WithSkipVerify(skipVerify))
 	if err != nil {
 		return err
 	}
@@ -129,7 +133,8 @@ func runPackList(ctx context.Context, c *cli.Command) error {
 
 // runPackListFiles runs the command for listing pack files.
 func runPackListFiles(ctx context.Context, c *cli.Command) error {
-	collection, err := assets.New(assets.FS)
+	skipVerify := c.Bool(skipVerifyFlagName)
+	collection, err := assets.New(assets.FS, assets.WithSkipVerify(skipVerify))
 	if err != nil {
 		return err
 	}
@@ -178,7 +183,8 @@ func runPackListFiles(ctx context.Context, c *cli.Command) error {
 
 // runPackSums runs the command for printing checksums of pack resources.
 func runPackSums(ctx context.Context, c *cli.Command) error {
-	collection, err := assets.New(assets.FS)
+	skipVerify := c.Bool(skipVerifyFlagName)
+	collection, err := assets.New(assets.FS, assets.WithSkipVerify(skipVerify))
 	if err != nil {
 		return err
 	}

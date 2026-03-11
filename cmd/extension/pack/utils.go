@@ -56,6 +56,20 @@ var outputFormatFlag = &cli.StringFlag{
 	},
 }
 
+// skipVerifyFlagName is the name of the flag, which controls whether to skip
+// verification of a pack collection.
+
+var skipVerifyFlagName = "skip-verify"
+
+// skipVerificationFlag is a [cli.Flag] which specifies that collection
+// verification is to be skipped when set.
+var skipVerifyFlag = &cli.BoolFlag{
+	Name:    skipVerifyFlagName,
+	Usage:   "skip verification of packs",
+	Value:   false,
+	Aliases: []string{"insecure-skip-verify", "k"},
+}
+
 // newTableWriter creates a new [tablewriter.Table] with the given [io.Writer]
 // and headers.
 func newTableWriter(w io.Writer, headers []string) *tablewriter.Table {
