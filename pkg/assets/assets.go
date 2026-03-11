@@ -7,6 +7,7 @@ package assets
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha256"
 	"embed"
 	_ "embed"
 	"errors"
@@ -194,6 +195,24 @@ type Resource struct {
 // Read reads the resource and returns its contents.
 func (r *Resource) Read() ([]byte, error) {
 	return fs.ReadFile(r.fileSystem, r.Path)
+}
+
+// Verify verifies the checksum of the resource.
+func (r *Resource) Verify() error {
+	data, err := r.Read()
+	if err != nil {
+		return err
+	}
+
+	h := sha256.New()
+	h.Write(data)
+	sum := fmt.Sprintf("%x", h.Sum(nil))
+
+	if !strings.EqualFold(r.SHA256, sum) {
+		return fmt.Errorf("checksum mismatch for %s, want %s, got %s", r.Path, r.SHA256, sum)
+	}
+
+	return nil
 }
 
 // SumsFromReader parses the checksums from the given reader and returns it as a
