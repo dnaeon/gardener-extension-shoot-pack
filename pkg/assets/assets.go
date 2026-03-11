@@ -148,6 +148,9 @@ func New(fileSystem fs.FS) (*Collection, error) {
 			if !ok {
 				return nil, fmt.Errorf("no checksum found for %s", resourcePath)
 			}
+			if sha256sum == "" {
+				return nil, fmt.Errorf("empty checksum found for %s", resourcePath)
+			}
 			resource := Resource{
 				Path:       resourcePath,
 				SHA256:     sha256sum,
