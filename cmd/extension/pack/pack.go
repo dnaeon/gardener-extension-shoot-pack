@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/urfave/cli/v3"
@@ -75,6 +76,33 @@ func New() *cli.Command {
 					},
 				},
 				Action: runPackSums,
+			},
+			{
+				Name:    "dump",
+				Usage:   "dump pack resources",
+				Aliases: []string{"d"},
+				Flags: []cli.Flag{
+					skipVerifyFlag,
+					&cli.StringFlag{
+						Name:     "name",
+						Usage:    "name of the pack",
+						Required: true,
+						Aliases:  []string{"n"},
+					},
+					&cli.StringFlag{
+						Name:     "version",
+						Usage:    "version of the pack",
+						Required: true,
+						Aliases:  []string{"v"},
+					},
+					&cli.StringFlag{
+						Name:     "path",
+						Usage:    "dump pack to the specified path",
+						Required: true,
+						Aliases:  []string{"p"},
+					},
+				},
+				Action: runPackDump,
 			},
 		},
 	}
@@ -202,6 +230,42 @@ func runPackSums(ctx context.Context, c *cli.Command) error {
 	}
 
 	fmt.Println(string(data))
+
+	return nil
+}
+
+// runPackDump dumps the pack resources on the filesystem.
+func runPackDump(ctx context.Context, c *cli.Command) error {
+	skipVerify := c.Bool(skipVerifyFlagName)
+	collection, err := assets.New(assets.FS, assets.WithSkipVerify(skipVerify))
+	if err != nil {
+		return err
+	}
+
+	name := c.String("name")
+	version := c.String("version")
+	pack, err := collection.GetPack(name, version)
+	if err != nil {
+		return err
+	}
+
+	path := c.String("path")
+	packBaseDir := filepath.Join(path, pack.BaseDir)
+	if err := os.MkdirAll(packBaseDir, os.FileMode(0755)); err != nil {
+		return err
+	}
+
+	for _, resource := range pack.Resources {
+		data, err := resource.Read()
+		if err != nil {
+			return err
+		}
+
+		filePath := filepath.Join(path, resource.Path)
+		if err := os.WriteFile(filePath, data, os.FileMode(0644)); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
