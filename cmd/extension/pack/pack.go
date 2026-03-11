@@ -53,6 +53,26 @@ func New() *cli.Command {
 				},
 				Action: runPackListFiles,
 			},
+			{
+				Name:    "sums",
+				Usage:   "print checksums of a pack",
+				Aliases: []string{"s"},
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "name",
+						Usage:    "name of the pack",
+						Required: true,
+						Aliases:  []string{"n"},
+					},
+					&cli.StringFlag{
+						Name:     "version",
+						Usage:    "version of the pack",
+						Required: true,
+						Aliases:  []string{"v"},
+					},
+				},
+				Action: runPackSums,
+			},
 		},
 	}
 
@@ -148,11 +168,34 @@ func runPackListFiles(ctx context.Context, c *cli.Command) error {
 		if err != nil {
 			return err
 		}
-
-		fmt.Fprintf(os.Stdout, "%s\n", string(data))
+		fmt.Printf("%s\n", string(data))
 
 		return nil
 	default:
 		return fmt.Errorf("%w: %s", errUnknownOutputFormat, format)
 	}
+}
+
+// runPackSums runs the command for printing checksums of pack resources.
+func runPackSums(ctx context.Context, c *cli.Command) error {
+	collection, err := assets.New(assets.FS)
+	if err != nil {
+		return err
+	}
+
+	name := c.String("name")
+	version := c.String("version")
+	pack, err := collection.GetPack(name, version)
+	if err != nil {
+		return err
+	}
+
+	data, err := pack.ReadFile(assets.MetaFileSums)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(data))
+
+	return nil
 }
