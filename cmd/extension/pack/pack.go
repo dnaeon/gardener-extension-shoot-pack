@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package controller
+package pack
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os"
 	"strconv"
 
-	"github.com/olekukonko/tablewriter"
-	"github.com/olekukonko/tablewriter/tw"
 	"github.com/urfave/cli/v3"
 
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/assets"
@@ -27,7 +27,10 @@ func New() *cli.Command {
 				Name:    "list",
 				Usage:   "list builtin packs",
 				Aliases: []string{"ls"},
-				Action:  runPackList,
+				Flags: []cli.Flag{
+					outputFormatFlag,
+				},
+				Action: runPackList,
 			},
 		},
 	}
@@ -42,46 +45,43 @@ func runPackList(ctx context.Context, c *cli.Command) error {
 		return err
 	}
 
-	headers := []string{
-		"NAME",
-		"VERSION",
-		"NAMESPACE",
-		"DESCRIPTION",
-		"RESOURCES",
-	}
+	format := outputFormat(c.String(outputFormatFlagName))
 
-	tableOpts := []tablewriter.Option{
-		tablewriter.WithHeader(headers),
-		tablewriter.WithRendition(
-			tw.Rendition{
-				Borders: tw.Border{
-					Top:    tw.Off,
-					Bottom: tw.Off,
-					Left:   tw.Off,
-					Right:  tw.Off,
-				},
-			},
-		),
-	}
-	table := tablewriter.NewWriter(os.Stdout).Options(tableOpts...)
-	table.Configure(func(cfg *tablewriter.Config) {
-		cfg.Row.Alignment.Global = tw.AlignLeft
-		cfg.Row.Formatting.AutoWrap = tw.WrapNone
-		cfg.Header.Alignment.Global = tw.AlignLeft
-	})
-
-	for _, pack := range collection.Packs {
-		row := []string{
-			pack.Name,
-			pack.Version,
-			pack.Namespace,
-			pack.Description,
-			strconv.Itoa(len(pack.Resources)),
+	switch format {
+	case outputFormatTable:
+		headers := []string{
+			"NAME",
+			"VERSION",
+			"NAMESPACE",
+			"DESCRIPTION",
+			"RESOURCES",
 		}
-		if err := table.Append(row); err != nil {
+		table := newTableWriter(os.Stdout, headers)
+
+		for _, pack := range collection.Packs {
+			row := []string{
+				pack.Name,
+				pack.Version,
+				pack.Namespace,
+				pack.Description,
+				strconv.Itoa(len(pack.Resources)),
+			}
+			if err := table.Append(row); err != nil {
+				return err
+			}
+		}
+
+		return table.Render()
+	case outputFormatJSON:
+		data, err := json.MarshalIndent(collection, "", "  ")
+		if err != nil {
 			return err
 		}
-	}
 
-	return table.Render()
+		fmt.Fprintf(os.Stdout, "%s\n", string(data))
+
+		return nil
+	default:
+		return fmt.Errorf("%w: %s", errUnknownOutputFormat, format)
+	}
 }

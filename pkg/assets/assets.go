@@ -164,7 +164,7 @@ func New(fileSystem fs.FS) (*Collection, error) {
 			Name:        packName,
 			Version:     packVersion,
 			Description: string(desc),
-			Namespace:   string(namespace),
+			Namespace:   strings.TrimSpace(string(namespace)),
 			Resources:   resources,
 		}
 
