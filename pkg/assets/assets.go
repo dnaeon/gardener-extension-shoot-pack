@@ -53,6 +53,18 @@ type Collection struct {
 	fileSystem fs.FS
 }
 
+// Verify verifies the checksums of all packs in the [Collection].
+func (c *Collection) Verify() error {
+	allErrs := make([]error, 0)
+	for _, pack := range c.Packs {
+		if err := pack.Verify(); err != nil {
+			allErrs = append(allErrs, err)
+		}
+	}
+
+	return utilerrors.NewAggregate(allErrs)
+}
+
 // New creates a new [Collection] from the given [fs.FS].
 // The structure of the filesystem containing the packs follows this
 // convention.
