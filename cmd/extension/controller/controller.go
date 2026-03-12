@@ -15,9 +15,12 @@ import (
 	"time"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
+	extensionscmdcontroller "github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
+	extensionscmdwebhook "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/controllerutils"
+	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
 	glogger "github.com/gardener/gardener/pkg/logger"
 	"github.com/go-logr/logr"
 	"github.com/urfave/cli/v3"
@@ -29,8 +32,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	packactuator "github.com/gardener/gardener-extension-shoot-pack/pkg/actuator/pack"
+	grmmutator "github.com/gardener/gardener-extension-shoot-pack/pkg/admission/mutator/grm"
 	configinstall "github.com/gardener/gardener-extension-shoot-pack/pkg/apis/config/install"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/controller"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/heartbeat"
@@ -90,6 +96,15 @@ func (f *flags) getLogger() logr.Logger {
 
 // getManager creates a new [ctrl.Manager] based on the parsed [flags].
 func (f *flags) getManager(ctx context.Context) (ctrl.Manager, error) {
+	webhookOpts := webhook.Options{
+		Host:     f.webhookServerHost,
+		Port:     f.webhookServerPort,
+		CertDir:  f.webhookServerCertDir,
+		CertName: f.webhookServerCertName,
+		KeyName:  f.webhookServerKeyName,
+	}
+	webhookServer := webhook.NewServer(webhookOpts)
+
 	m, err := mgr.New(
 		mgr.WithContext(ctx),
 		mgr.WithAddToScheme(clientgoscheme.AddToScheme),
@@ -110,6 +125,8 @@ func (f *flags) getManager(ctx context.Context) (ctrl.Manager, error) {
 			QPS:   f.clientConnQPS,
 			Burst: f.clientConnBurst,
 		}),
+		mgr.WithWebhookServer(webhookServer),
+		mgr.WithReadyzCheck("webhook-server", webhookServer.StartedChecker()),
 	)
 
 	if err != nil {
@@ -130,7 +147,38 @@ func (f *flags) getManager(ctx context.Context) (ctrl.Manager, error) {
 		return nil, fmt.Errorf("failed to setup heartbeat controller: %w", err)
 	}
 
+	if err := m.AddReadyzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthz(m.GetCache())); err != nil {
+		return nil, fmt.Errorf("failed to setup ready check: %w", err)
+	}
+
 	return m, nil
+}
+
+// getExtensionWebhookOpts returns [extensionscmdwebhook.AddToManagerOptions]
+// based on the specified command-line flags.
+func (f *flags) getExtensionWebhookOpts() *extensionscmdwebhook.AddToManagerOptions {
+	serverOpts := &extensionscmdwebhook.ServerOptions{
+		Mode:           f.webhookConfigMode,
+		URL:            f.webhookConfigURL,
+		ServicePort:    f.webhookConfigServicePort,
+		Namespace:      f.webhookConfigNamespace,
+		OwnerNamespace: f.webhookConfigOwnerNamespace,
+	}
+
+	generalOpts := &extensionscmdcontroller.GeneralOptions{
+		GardenerVersion: f.gardenerVersion,
+	}
+
+	addToManagerOpts := extensionscmdwebhook.NewAddToManagerOptions(
+		f.extensionName,
+		"",
+		nil,
+		generalOpts,
+		serverOpts,
+		&extensionscmdwebhook.SwitchOptions{},
+	)
+
+	return addToManagerOpts
 }
 
 // flagsKey is the key used to store the parsed command-line flags in a
@@ -474,6 +522,38 @@ func runManager(ctx context.Context, cmd *cli.Command) error {
 	}
 	for feat, enabled := range flags.gardenletFeatureGates {
 		logger.Info("configured gardenlet feature gate", "feature", feat, "enabled", enabled)
+	}
+
+	logger.Info("setting up admission webhooks")
+
+	// Webhooks to be registered
+	webhooks := make([]*extensionswebhook.Webhook, 0)
+	webhookFuncs := []func(m ctrl.Manager) (*extensionswebhook.Webhook, error){
+		grmmutator.NewMutatorWebhook,
+	}
+
+	for _, webhookFunc := range webhookFuncs {
+		wh, err := webhookFunc(m)
+		if err != nil {
+			return fmt.Errorf("failed to create admission webhook: %w", err)
+		}
+		webhooks = append(webhooks, wh)
+	}
+
+	extensionWebhookOpts := flags.getExtensionWebhookOpts()
+	if err := extensionWebhookOpts.Complete(); err != nil {
+		return err
+	}
+	extensionWebhookConfig := extensionWebhookOpts.Completed()
+	extensionWebhookConfig.Switch = extensionscmdwebhook.SwitchConfig{
+		Disabled: false,
+		WebhooksFactory: func(m manager.Manager) ([]*extensionswebhook.Webhook, error) {
+			return webhooks, nil
+		},
+	}
+
+	if _, err := extensionWebhookConfig.AddToManager(ctx, m, nil); err != nil {
+		return fmt.Errorf("failed to setup extension webhook with manager: %w", err)
 	}
 
 	logger.Info("starting manager")
