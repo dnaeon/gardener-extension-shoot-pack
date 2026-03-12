@@ -304,10 +304,10 @@ undeploy-operator:  ## Cleanup the deployed operator extension.
 	@$(GO_TOOL) kustomize build $(SRC_ROOT)/examples/operator-extension | \
 		kubectl delete --ignore-not-found=true --wait=false -f -
 
-.PHONY: build-packs
-build-packs:  ## Build all packs
+.PHONY: pack-build
+pack-build:  ## Build all packs
 	@$(foreach pack_spec,$(PACK_SPECS),$(call run-command,$(SCRIPTS_DIR)/pack-build.sh build $(pack_spec)))
 
-.PHONY: verify-packs
-verify-packs:  ## Verify all packs
+.PHONY: pack-verify
+pack-verify:  ## Verify all packs
 	@$(foreach pack_spec,$(PACK_SPECS),$(call run-command,$(SCRIPTS_DIR)/pack-verify.sh verify $(pack_spec)))
