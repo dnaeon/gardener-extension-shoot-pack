@@ -22,6 +22,7 @@ import (
 	packactuator "github.com/gardener/gardener-extension-shoot-pack/pkg/actuator/pack"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/apis/config/validation"
+	"github.com/gardener/gardener-extension-shoot-pack/pkg/assets"
 )
 
 // ErrExtensionNotFound is an error, which is returned when the extension was
@@ -131,7 +132,15 @@ func (v *shootValidator) validateExtension(newObj *core.Shoot, _ *core.Shoot) er
 		return fmt.Errorf("invalid extension configuration for %s: %w", v.extensionType, err)
 	}
 
-	// TODO(user): additional validation checks
+	collection, err := assets.New(assets.FS, assets.WithSkipVerify(false))
+	if err != nil {
+		return err
+	}
+	for _, pack := range cfg.Spec.Packs {
+		if !collection.PackExists(pack.Name, pack.Version) {
+			return fmt.Errorf("pack %s@%s does not exist", pack.Name, pack.Version)
+		}
+	}
 
 	return nil
 }
