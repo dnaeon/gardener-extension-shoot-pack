@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"text/template"
 
 	"github.com/urfave/cli/v3"
 
@@ -103,6 +104,44 @@ func New() *cli.Command {
 					},
 				},
 				Action: runPackDump,
+			},
+			{
+				Name:    "init",
+				Usage:   "init a new pack spec",
+				Aliases: []string{"i"},
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "name",
+						Usage:    "name of the pack",
+						Required: true,
+						Aliases:  []string{"n"},
+					},
+					&cli.StringFlag{
+						Name:     "version",
+						Usage:    "version of the pack",
+						Required: true,
+						Aliases:  []string{"v"},
+					},
+					&cli.StringFlag{
+						Name:     "namespace",
+						Usage:    "target namespace for pack resources",
+						Required: true,
+						Aliases:  []string{"ns"},
+					},
+					&cli.StringFlag{
+						Name:     "description",
+						Usage:    "pack description",
+						Required: true,
+						Aliases:  []string{"d"},
+					},
+					&cli.StringFlag{
+						Name:    "maintainer",
+						Usage:   "pack maintainer",
+						Value:   os.Getenv("USER"),
+						Aliases: []string{"m"},
+					},
+				},
+				Action: runPackInit,
 			},
 		},
 	}
@@ -268,4 +307,56 @@ func runPackDump(ctx context.Context, c *cli.Command) error {
 	}
 
 	return nil
+}
+
+// runPackInit creates a new pack spec.
+func runPackInit(ctx context.Context, c *cli.Command) error {
+	tmplRaw := `# -*- mode: bash-ts-mode; sh-basic-offset 2; -*-
+
+# Maintainer: {{ .Maintainer }}
+
+NAME={{ .Name }}
+VERSION={{ .Version }}
+NAMESPACE={{ .Namespace }}
+DESCRIPTION={{ .Description }}
+
+package() {
+  # Use Helm
+  ${HELM} repo add ...
+  ${HELM} template <repo>/<name> > ${PACK_DIR}/bundle.yaml
+
+  # Or kustomize
+  # ${KUSTOMIZE} build ...
+
+  # ... or simply install your resources from the pack source dir
+  # install -m0644 ${SRC_DIR}/configmap.yaml ${PACK_DIR}/
+  # install -m0644 ${SRC_DIR}/pvc.yaml ${PACK_DIR}/
+  # install -m0644 ${SRC_DIR}/role.yaml ${PACK_DIR}/
+}
+
+# Uncomment the following function, if your pack provides tests.
+# package_test() {
+#   echo "Testing pack ..."
+# }
+`
+	data := struct {
+		Name        string
+		Version     string
+		Namespace   string
+		Description string
+		Maintainer  string
+	}{
+		Name:        c.String("name"),
+		Version:     c.String("version"),
+		Description: c.String("description"),
+		Namespace:   c.String("namespace"),
+		Maintainer:  c.String("maintainer"),
+	}
+
+	tmpl, err := template.New("pack").Parse(tmplRaw)
+	if err != nil {
+		return err
+	}
+
+	return tmpl.Execute(os.Stdout, data)
 }
