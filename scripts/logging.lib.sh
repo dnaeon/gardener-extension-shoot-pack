@@ -50,9 +50,9 @@ function _msg_error() {
   local _ts="$( date +%Y-%m-%d-%T.%3N)"
 
   if [[ "${LOG_WITH_TIMESTAMP}" == "true" ]]; then
-    echo -e "[$( date +%Y-%m-%d-%T.%3N)] ${_SCRIPT_NAME} | ${_RED}ERROR${_NO_COLOR}: ${_msg}"
+    echo -e "[$( date +%Y-%m-%d-%T.%3N)] ${_SCRIPT_NAME} | ${_RED}ERROR${_NO_COLOR}: ${_msg}" >&2
   else
-    echo -e "${_SCRIPT_NAME} | ${_RED}ERROR${_NO_COLOR}: ${_msg}"
+    echo -e "${_SCRIPT_NAME} | ${_RED}ERROR${_NO_COLOR}: ${_msg}" >&2
   fi
 
   if [[ ${_rc} -ne 0 ]]; then
