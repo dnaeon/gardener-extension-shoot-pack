@@ -143,9 +143,16 @@ function _main() {
       ;;
     b|build)
       # NOTE: pack building should be executed from within a sub-shell
+      set +e
       (
+        set -eu
         _build_pack "${_pack_path}"
       )
+      local _rc=$?
+      set -e
+      if [[ "${_rc}" -ne 0 ]]; then
+        _msg_error "Failed to build pack" "${_rc}"
+      fi
       ;;
     *)
       _msg_error "unknown command ${_operation}" 64  # EX_USAGE
