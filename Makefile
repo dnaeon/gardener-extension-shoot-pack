@@ -8,6 +8,9 @@ GOCMD?= go
 SRC_ROOT := $(shell git rev-parse --show-toplevel)
 HACK_DIR := $(SRC_ROOT)/hack
 SRC_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./...)
+PACK_SPECS_DIR := $(SRC_ROOT)/specs
+PACK_ASSETS_DIR := $(SRC_ROOT)/pkg/assets/packs
+PACK_BASE_DIRS := $(wildcard $(PACK_ASSETS_DIR)/*/*)
 
 GOOS := $(shell $(GOCMD) env GOOS)
 GOARCH := $(shell $(GOCMD) env GOARCH)
@@ -98,7 +101,7 @@ help: ## Display this help.
 $(LOCAL_BIN):
 	mkdir -p $(LOCAL_BIN)
 
-$(BINARY): $(SRC_DIRS) | $(LOCAL_BIN)
+$(BINARY): $(SRC_DIRS) $(PACK_BASE_DIRS) | $(LOCAL_BIN)
 	$(GOCMD) build \
 		-o $(LOCAL_BIN)/ \
 		-ldflags="-X '$(GO_MODULE)/pkg/version.Version=${VERSION}'" \
