@@ -42,7 +42,7 @@ _EOF_
 
 # Builds a pack from a given path.
 #
-# NOTE: This function is meant to called from within a sub-shell.
+# NOTE: This function is meant to be called from within a sub-shell.
 #
 # $1: Path to a pack
 function _build_pack() {
@@ -60,26 +60,19 @@ function _build_pack() {
   fi
 
   # Pack build steps
-  set -e
-
   # shellcheck source=/dev/null
   source "${_LIBS_DIR}/tools.lib.sh"
+  # shellcheck source=/dev/null
+  source "${_LIBS_DIR}/pack.lib.sh"
 
   # Source and sanity check the pack spec
   local _pack_spec_file="${_pack_spec_base_dir}/${PACK_SPEC_FILE}"
   # shellcheck source=/dev/null
   source "${_pack_spec_file}"
 
-  # Require the presence of the following vars in the pack spec
-  local _want_vars=(
-    NAME
-    VERSION
-    DESCRIPTION
-    NAMESPACE
-  )
-
-  for _var in "${_want_vars[@]}"; do
-    if [ -z "${!_var}" ]; then
+  # Require the presence of certain vars in the pack spec
+  for _var in "${PACK_SPEC_REQUIRED_VARS[@]}"; do
+    if [[ -z "${!_var}" ]]; then
       _msg_error "_build_pack: required var ${_var} is not set in pack spec @ ${_pack_spec_file}" 1
     fi
   done
@@ -145,7 +138,7 @@ function _main() {
       # NOTE: pack building should be executed from within a sub-shell
       set +e
       (
-        set -eu
+        set -e
         _build_pack "${_pack_path}"
       )
       local _rc=$?

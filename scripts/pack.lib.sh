@@ -14,6 +14,12 @@ export PACK_METADATA_SUMS=".SUMS"
 export PACK_SPEC_FILE="PACKAGE"
 export PACK_RESOURCES_GLOB="*.yaml"
 export ASSETS_PKG="${_PROJECT_ROOT}/pkg/assets"
+export PACK_SPEC_REQUIRED_VARS=(
+    NAME
+    VERSION
+    DESCRIPTION
+    NAMESPACE
+)
 
 # Returns the base dir of a pack spec
 #
