@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"embed"
-	_ "embed"
 	"errors"
 	"fmt"
 	"io"
@@ -317,7 +316,9 @@ func (r *Resource) Verify() error {
 	}
 
 	h := sha256.New()
-	h.Write(data)
+	if _, err := h.Write(data); err != nil {
+		return err
+	}
 	sum := fmt.Sprintf("%x", h.Sum(nil))
 
 	if !strings.EqualFold(r.SHA256, sum) {

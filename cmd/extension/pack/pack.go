@@ -190,7 +190,7 @@ func runPackList(ctx context.Context, c *cli.Command) error {
 			return err
 		}
 
-		fmt.Fprintf(os.Stdout, "%s\n", string(data))
+		fmt.Printf("%s\n", string(data))
 
 		return nil
 	default:

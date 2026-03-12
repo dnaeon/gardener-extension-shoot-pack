@@ -33,7 +33,7 @@ func Validate(cfg config.PackConfig) error {
 	}
 
 	// Validate pack fields
-	seenPacks := make([]seenPack, 0)
+	seenPacks := make([]seenPack, 0, len(cfg.Spec.Packs))
 	for idx, pack := range cfg.Spec.Packs {
 		if pack.Name == "" {
 			allErrs = append(

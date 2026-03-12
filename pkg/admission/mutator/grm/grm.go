@@ -74,12 +74,12 @@ var _ extensionswebhook.Mutator = &mutator{}
 
 // newMutator creates a new [mutator], which implements the
 // [extensionswebhook.Mutator] interface.
-func newMutator(client client.Client, logger logr.Logger) (*mutator, error) {
-	if client == nil {
+func newMutator(c client.Client, logger logr.Logger) (*mutator, error) {
+	if c == nil {
 		return nil, fmt.Errorf("%w: invalid client specified", ErrInvalidMutator)
 	}
 
-	scheme := client.Scheme()
+	scheme := c.Scheme()
 	ser := json.NewSerializerWithOptions(
 		json.DefaultMetaFactory,
 		scheme,
@@ -89,7 +89,7 @@ func newMutator(client client.Client, logger logr.Logger) (*mutator, error) {
 	decoder := serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
 
 	m := &mutator{
-		client:        client,
+		client:        c,
 		ser:           ser,
 		decoder:       decoder,
 		logger:        logger,
