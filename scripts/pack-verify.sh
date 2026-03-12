@@ -74,6 +74,8 @@ function _verify_pack() {
     fi
   done
 
+  _msg_info "Verifying ${NAME}@${VERSION} pack ..."
+
   # Each pack spec must define a `package()' function
   type -t package >& /dev/null || {
     _msg_error "_verify_pack: ${_pack_spec_file} does not provide a package() function" 1

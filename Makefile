@@ -7,8 +7,11 @@ SHELL = /usr/bin/env bash -o pipefail
 GOCMD?= go
 SRC_ROOT := $(shell git rev-parse --show-toplevel)
 HACK_DIR := $(SRC_ROOT)/hack
+SCRIPTS_DIR := $(SRC_ROOT)/scripts
 SRC_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./...)
+
 PACK_SPECS_DIR := $(SRC_ROOT)/specs
+PACK_SPECS := $(wildcard $(PACK_SPECS_DIR)/*/PACKAGE)
 PACK_ASSETS_DIR := $(SRC_ROOT)/pkg/assets/packs
 PACK_BASE_DIRS := $(wildcard $(PACK_ASSETS_DIR)/*/*)
 
@@ -300,3 +303,11 @@ deploy-operator: generate update-version-tags docker-build docker-push helm-load
 undeploy-operator:  ## Cleanup the deployed operator extension.
 	@$(GO_TOOL) kustomize build $(SRC_ROOT)/examples/operator-extension | \
 		kubectl delete --ignore-not-found=true --wait=false -f -
+
+.PHONY: build-packs
+build-packs:  ## Build all packs
+	@$(foreach pack_spec,$(PACK_SPECS),$(call run-command,$(SCRIPTS_DIR)/pack-build.sh build $(pack_spec)))
+
+.PHONY: verify-packs
+verify-packs:  ## Verify all packs
+	@$(foreach pack_spec,$(PACK_SPECS),$(call run-command,$(SCRIPTS_DIR)/pack-verify.sh verify $(pack_spec)))
