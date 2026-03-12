@@ -90,7 +90,7 @@ func (c *Collection) GetPack(name, version string) (*Pack, error) {
 		}
 	}
 
-	return nil, nil
+	return nil, fmt.Errorf("unable to find pack %s with version %s", name, version)
 }
 
 // Option is a function which configures a pack [Collection].
@@ -185,13 +185,7 @@ func New(fileSystem fs.FS, opts ...Option) (*Collection, error) {
 
 		resources := make([]Resource, 0)
 		for _, resourcePath := range resourcePaths {
-			sha256sum, ok := sums[resourcePath]
-			if !ok {
-				return nil, fmt.Errorf("no checksum found for %s", resourcePath)
-			}
-			if sha256sum == "" {
-				return nil, fmt.Errorf("empty checksum found for %s", resourcePath)
-			}
+			sha256sum := sums[resourcePath]
 			resource := Resource{
 				Path:       resourcePath,
 				SHA256:     sha256sum,
@@ -203,7 +197,7 @@ func New(fileSystem fs.FS, opts ...Option) (*Collection, error) {
 		pack := &Pack{
 			Name:        packName,
 			Version:     packVersion,
-			Description: string(desc),
+			Description: strings.TrimSpace(string(desc)),
 			Namespace:   strings.TrimSpace(string(namespace)),
 			Resources:   resources,
 			BaseDir:     packDir,
@@ -259,11 +253,6 @@ type Pack struct {
 // Verify verifies the checksums of pack resources.
 func (p *Pack) Verify() error {
 	allErrs := make([]error, 0)
-	for _, resource := range p.Resources {
-		if err := resource.Verify(); err != nil {
-			allErrs = append(allErrs, err)
-		}
-	}
 
 	if p.Name == "" {
 		allErrs = append(allErrs, errors.New("missing pack name"))
@@ -283,6 +272,12 @@ func (p *Pack) Verify() error {
 
 	if len(p.Resources) == 0 {
 		allErrs = append(allErrs, fmt.Errorf("no resources in pack %s@%s", p.Name, p.Version))
+	}
+
+	for _, resource := range p.Resources {
+		if err := resource.Verify(); err != nil {
+			allErrs = append(allErrs, err)
+		}
 	}
 
 	return utilerrors.NewAggregate(allErrs)
@@ -312,6 +307,10 @@ func (r *Resource) Read() ([]byte, error) {
 
 // Verify verifies the checksum of the resource.
 func (r *Resource) Verify() error {
+	if r.SHA256 == "" {
+		return fmt.Errorf("missing checksum for %s", r.Path)
+	}
+
 	data, err := r.Read()
 	if err != nil {
 		return err
