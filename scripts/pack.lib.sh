@@ -15,10 +15,10 @@ export PACK_SPEC_FILE="PACKAGE"
 export PACK_RESOURCES_GLOB="*.yaml"
 export ASSETS_PKG="${_PROJECT_ROOT}/pkg/assets"
 
-# Returns the base dir of a pack
+# Returns the base dir of a pack spec
 #
-# $1: Path to a pack file or directory
-function _get_pack_base_dir() {
+# $1: Path to a pack spec file or directory containing a pack spec
+function _get_pack_spec_base_dir() {
   local _path="${1}"
   local _base_dir=""
 
@@ -31,10 +31,10 @@ function _get_pack_base_dir() {
     _base_dir="$( dirname ${_path} )"
   elif [[ -f "${_path}/${PACK_SPEC_FILE}" ]]; then
     # We were called with a path, which contains a pack file
-    _base_dir="${_path}/${_PACK_SPEC_FILE}"
+    _base_dir="${_path}"
   else
-    _msg_error "_get_pack_base_dir: unable to find a pack spec at ${_path}" 1
+    _msg_error "_get_pack_base_dir: unable to find a pack spec at path ${_path}" 1
   fi
 
-  echo "$( dirname ${_base_dir} )"
+  echo "$( realpath ${_base_dir} )"
 }
