@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # -*- mode: bash-ts-mode; sh-basic-offset 2; -*-
 
 _SCRIPT_NAME="${0##*/}"
