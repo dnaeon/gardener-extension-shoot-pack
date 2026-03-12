@@ -38,7 +38,7 @@ function _msg_warn() {
   local _ts="$( date +%Y-%m-%d-%T.%3N)"
 
   if [[ "${LOG_WITH_TIMESTAMP}" == "true" ]]; then
-    echo -e "[$( date +%Y-%m-%d-%T.%3N)] | ${_SCRIPT_NAME} ${_YELLOW}WARN${_NO_COLOR}: ${_msg}"
+    echo -e "[$( date +%Y-%m-%d-%T.%3N)] ${_SCRIPT_NAME} | ${_YELLOW}WARN${_NO_COLOR}: ${_msg}"
   else
     echo -e "${_SCRIPT_NAME} | ${_YELLOW}WARN${_NO_COLOR}: ${_msg}"
   fi

@@ -119,6 +119,21 @@ function _verify_pack() {
   _msg_info "Metadata SUMS file: OK"
   cd "${OLDPWD}"
 
+  # Check for extra files in pack dir
+  local _extra_files=""
+  _extra_files=$( find "${PACK_DIR}" -type f \
+                       -not -iname "${PACK_METADATA_NAMESPACE}" -a \
+                       -not -iname "${PACK_METADATA_DESC}" -a \
+                       -not -iname "${PACK_METADATA_SUMS}" -a \
+                       -not -iname "${PACK_RESOURCES_GLOB}" -print )
+
+  while read _extra_file; do
+    if [[ -z "${_extra_file}" ]]; then
+      continue
+    fi
+    _msg_warn "Extra file found in pack dir: ${_extra_file}"
+  done <<<"${_extra_files}"
+
   _msg_info "Pack ${NAME}@${VERSION} verified successfully"
 }
 
