@@ -38,6 +38,7 @@ import (
 	packactuator "github.com/gardener/gardener-extension-shoot-pack/pkg/actuator/pack"
 	grmmutator "github.com/gardener/gardener-extension-shoot-pack/pkg/admission/mutator/grm"
 	configinstall "github.com/gardener/gardener-extension-shoot-pack/pkg/apis/config/install"
+	"github.com/gardener/gardener-extension-shoot-pack/pkg/assets"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/controller"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/heartbeat"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/mgr"
@@ -554,6 +555,19 @@ func runManager(ctx context.Context, cmd *cli.Command) error {
 
 	if _, err := extensionWebhookConfig.AddToManager(ctx, m, nil); err != nil {
 		return fmt.Errorf("failed to setup extension webhook with manager: %w", err)
+	}
+
+	collection, err := assets.New(assets.FS, assets.WithSkipVerify(false))
+	if err != nil {
+		return err
+	}
+	for _, pack := range collection.Packs {
+		logger.Info(
+			"pack provided by extension",
+			"name", pack.Name,
+			"version", pack.Version,
+			"namespace", pack.Namespace,
+		)
 	}
 
 	logger.Info("starting manager")
