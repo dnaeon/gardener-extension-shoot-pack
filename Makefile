@@ -69,7 +69,6 @@ KUBECONFORM_OPTS ?= 	-strict \
 			-verbose \
 			-summary \
 			-output pretty \
-			-skip Kustomization \
 			-schema-location default
 
 # Common options for the `addlicense' tool
@@ -241,6 +240,7 @@ check-examples:  ## Lint the generated example resources.
 	@$(GO_TOOL) kubeconform \
 		$(KUBECONFORM_OPTS) \
 		-schema-location "$(SRC_ROOT)/test/schemas/{{.Group}}/{{.ResourceAPIVersion}}/{{.ResourceKind}}.json" \
+		-schema-location https://json.schemastore.org/kustomization.json \
 		./examples
 	@echo "Checking operator extension resource ..."
 	@$(GO_TOOL) kustomize build $(SRC_ROOT)/examples/operator-extension | \
