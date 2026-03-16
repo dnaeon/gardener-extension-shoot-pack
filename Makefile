@@ -132,7 +132,7 @@ api-ref-docs:  ## Generate API reference docs.
 		--source-path $(SRC_ROOT)/pkg/apis
 
 .PHONY: build
-build: $(BINARY)  ## Build the extension binary.
+build: pack-build $(BINARY)  ## Build the extension binary.
 
 .PHONY: clean
 clean:  ## Clean up binary and test utils.
@@ -178,7 +178,7 @@ test:  ## Start envtest and run the unit tests.
 		-e '/pkg\/metrics/d' coverage.txt
 
 .PHONY: docker-build
-docker-build:  ## Build the extension Docker image.
+docker-build: pack-build  ## Build the extension Docker image.
 	@docker build \
 		--build-arg BUILD_DATE=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ') \
 		--build-arg VERSION=$(VERSION) \
