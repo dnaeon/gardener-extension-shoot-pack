@@ -84,6 +84,13 @@ func newEnsurer(c client.Client, logger logr.Logger) (*ensurer, error) {
 	return e, nil
 }
 
+// NewEnsurer returns a new [genericmutator.Ensurer], which mutates the Gardener
+// Resource Manager deployment by appending extra target namespaces for the
+// various packs provided by the extensions.
+func NewEnsurer(c client.Client, logger logr.Logger) (genericmutator.Ensurer, error) {
+	return newEnsurer(c, logger)
+}
+
 // EnsureGardenerResourceManagerDeployment ensure that the Gardener Resource
 // Manager deployment is configured with the extra pack namespaces provided by
 // the extension controller.
