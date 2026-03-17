@@ -4,15 +4,6 @@ metadata:
   name: extension-shoot-pack
 spec:
   deployment:
-    admission:
-      runtimeCluster:
-        helm:
-          ociRepository:
-            ref: registry.local.gardener.cloud:5001/helm-charts/gardener-extension-shoot-pack-admission-runtime:v0.1.0-dev
-      virtualCluster:
-        helm:
-          ociRepository:
-            ref: registry.local.gardener.cloud:5001/helm-charts/gardener-extension-shoot-pack-admission-virtual:v0.1.0-dev
     extension:
       helm:
         ociRepository:

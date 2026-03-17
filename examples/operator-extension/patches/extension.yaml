@@ -15,3 +15,17 @@ spec:
         reconcile: BeforeKubeAPIServer
         delete: AfterKubeAPIServer
         migrate: AfterKubeAPIServer
+  deployment:
+    extension:
+      helm:
+        ociRepository:
+          ref: registry.local.gardener.cloud:5001/helm-charts/gardener-extension-shoot-pack:v0.1.0-dev
+    admission:
+      runtimeCluster:
+        helm:
+          ociRepository:
+            ref: registry.local.gardener.cloud:5001/helm-charts/gardener-extension-shoot-pack-admission-runtime:v0.1.0-dev
+      virtualCluster:
+        helm:
+          ociRepository:
+            ref: registry.local.gardener.cloud:5001/helm-charts/gardener-extension-shoot-pack-admission-virtual:v0.1.0-dev
