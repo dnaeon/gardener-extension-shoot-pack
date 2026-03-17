@@ -12,7 +12,11 @@ _TOOLS_MOD_FILE="${_PROJECT_ROOT}/internal/tools/go.mod"
 YQ=$( go tool -n -modfile "${_TOOLS_MOD_FILE}" yq )
 KUSTOMIZE=$( go tool -n -modfile "${_TOOLS_MOD_FILE}" kustomize )
 HELM=$( go tool -n -modfile "${_TOOLS_MOD_FILE}" helm )
+KUBECTL_SLICE=$( go tool -n -modfile "${_TOOLS_MOD_FILE}" kubectl-slice )
+KUBECONFORM=$( go tool -n -modfile "${_TOOLS_MOD_FILE}" kubeconform )
 
 export YQ \
        KUSTOMIZE \
-       HELM
+       HELM \
+       KUBECTL_SLICE \
+       KUBECONFORM
