@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	packactuator "github.com/gardener/gardener-extension-shoot-pack/pkg/actuator/pack"
-	grmmutator "github.com/gardener/gardener-extension-shoot-pack/pkg/admission/mutator/grm"
+	gmrmutator "github.com/gardener/gardener-extension-shoot-pack/pkg/admission/mutator/grm"
 	configinstall "github.com/gardener/gardener-extension-shoot-pack/pkg/apis/config/install"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/assets"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/controller"
@@ -530,7 +530,7 @@ func runManager(ctx context.Context, cmd *cli.Command) error {
 	// Webhooks to be registered
 	webhooks := make([]*extensionswebhook.Webhook, 0)
 	webhookFuncs := []func(m ctrl.Manager) (*extensionswebhook.Webhook, error){
-		grmmutator.NewMutatorWebhook,
+		gmrmutator.NewWebhook,
 	}
 
 	for _, webhookFunc := range webhookFuncs {
