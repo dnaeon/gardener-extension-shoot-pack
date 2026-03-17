@@ -1,0 +1,39 @@
+# -*- mode: shell-script; sh-basic-offset: 2; -*-
+
+# Maintainer: @dnaeon
+
+NAME=cnpg-operator
+VERSION=0.27.1
+NAMESPACE=cnpg-system
+DESCRIPTION="CloudNative PostgreSQL Operator"
+
+package() {
+  local release_name="extension"
+
+  # Render the upstream chart, clean it up, and slice it up.
+  ${HELM} repo add cnpg https://cloudnative-pg.github.io/charts
+  ${HELM} repo update cnpg
+  ${HELM} template \
+          --version ${VERSION} \
+          --release-name ${release_name} \
+          --namespace ${NAMESPACE} \
+          cnpg/cloudnative-pg | \
+    grep -v '^#' | \
+    ${KUBECTL_SLICE} -f - --output-dir ${PACK_DIR}/
+
+  # Add required labels for the Gardener NetworkPolicy controller
+  local deployment_file="${PACK_DIR}/deployment-${release_name}-cloudnative-pg.yaml"
+  ${YQ} -i '.spec.template.metadata.labels."networking.gardener.cloud/to-dns"="allowed"' "${deployment_file}"
+  ${YQ} -i '.spec.template.metadata.labels."networking.gardener.cloud/to-apiserver"="allowed"' "${deployment_file}"
+}
+
+package_test() {
+  ${KUBECONFORM} \
+    -strict \
+    -verbose \
+    -summary \
+    -output pretty \
+    -schema-location default \
+    -schema-location "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/{{.NormalizedKubernetesVersion}}/{{.ResourceKind}}.json" \
+    ${PACK_DIR}
+}
