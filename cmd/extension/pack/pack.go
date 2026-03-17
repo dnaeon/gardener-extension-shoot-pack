@@ -311,14 +311,14 @@ func runPackDump(ctx context.Context, c *cli.Command) error {
 
 // runPackInit creates a new pack spec.
 func runPackInit(ctx context.Context, c *cli.Command) error {
-	tmplRaw := `# -*- mode: bash-ts-mode; sh-basic-offset 2; -*-
+	tmplRaw := `# -*- mode: shell-script; sh-basic-offset: 2; -*-
 
 # Maintainer: {{ .Maintainer }}
 
 NAME={{ .Name }}
 VERSION={{ .Version }}
 NAMESPACE={{ .Namespace }}
-DESCRIPTION={{ .Description }}
+DESCRIPTION="{{ .Description }}"
 
 package() {
   # Use Helm
