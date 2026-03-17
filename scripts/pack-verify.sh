@@ -62,6 +62,11 @@ function _verify_pack() {
     _msg_error "_verify_pack: unable to find base pack dir for ${_pack_path}" 1
   fi
 
+  # shellcheck source=/dev/null
+  source "${_LIBS_DIR}/tools.lib.sh"
+  # shellcheck source=/dev/null
+  source "${_LIBS_DIR}/pack.lib.sh"
+
   # Source and sanity check the pack spec
   local _pack_spec_file="${_pack_spec_base_dir}/${PACK_SPEC_FILE}"
   # shellcheck source=/dev/null
@@ -82,13 +87,10 @@ function _verify_pack() {
   }
   _msg_info "package() is defined: OK"
 
-  # Run tests, if a `package_test()' function has been provided by the spec
-  type -t package_test >& /dev/null && {
-    _msg_info "package_test() is defined: OK"
-  }
-
-  # Verify metadata files for the pack
-  PACK_DIR="${ASSETS_PKG}/packs/${NAME}/${VERSION}"
+  # Make SRC_DIR and PACK_DIR available to the pack spec
+  SRC_DIR="${_pack_spec_base_dir}"  # Source directory points to the pack spec dir
+  PACK_DIR="$( realpath "${ASSETS_PKG}/packs/${NAME}/${VERSION}" )"
+  export SRC_DIR PACK_DIR
 
   # Verify NAMESPACE metadata file
   local _md_file_namespace="${PACK_DIR}/${PACK_METADATA_NAMESPACE}"
@@ -120,6 +122,12 @@ function _verify_pack() {
   cat "${_md_file_sums}" | sha256sum --check -
   _msg_info "Metadata SUMS file: OK"
   cd "${OLDPWD}"
+
+  # Each pack may optionally define a `package_test()' function
+  type -t package_test >& /dev/null && {
+    _msg_info "package_test() is defined: OK"
+    package_test
+  }
 
   # Check for extra files in pack dir
   local _extra_files=""

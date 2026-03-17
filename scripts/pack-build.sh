@@ -94,15 +94,15 @@ function _build_pack() {
   # Make SRC_DIR and PACK_DIR available to package() functions
   export SRC_DIR PACK_DIR
 
+  # Clean up old resources, if any.
+  find "${PACK_DIR}" \
+       -type f \
+       -iname "${PACK_RESOURCES_GLOB}" \
+       -delete
+
   # Package it up
   _msg_info "Building pack ${NAME}@${VERSION} ..."
   package
-
-  # Run tests, if a `package_test()' function has been provided by the spec
-  type -t package_test >& /dev/null && {
-    _msg_info "Running tests for pack ${NAME}@${VERSION} ..."
-    package_test
-  }
 
   # Generate metadata files for the pack
   _msg_info "Generating metadata files for pack ${NAME}@${VERSION} ..."
@@ -116,6 +116,7 @@ function _build_pack() {
 
   cd "${ASSETS_PKG}"
   find "packs/${NAME}/${VERSION}" \
+       -type f \
        -iname "${PACK_RESOURCES_GLOB}" \
        -exec sha256sum {} \; | tee -a "${PACK_DIR}/${PACK_METADATA_SUMS}"
   cd "${OLDPWD}"
