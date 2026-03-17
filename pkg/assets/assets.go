@@ -128,8 +128,8 @@ func WithSkipVerify(val bool) Option {
 //	│       └── statefulset.yaml
 //	└── valkey
 //	      └── 9.0.3
-//	      ├── pvc.yaml
-//	      └── statefulset.yaml
+//	         ├── pvc.yaml
+//	         └── statefulset.yaml
 func New(fileSystem fs.FS, opts ...Option) (*Collection, error) {
 	topLevelDirs, err := fs.Glob(fileSystem, "packs/*/*")
 	if err != nil {
