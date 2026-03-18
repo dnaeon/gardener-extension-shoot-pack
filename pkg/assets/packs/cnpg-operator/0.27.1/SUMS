@@ -2,7 +2,7 @@
 ef432ad44b16ad00dc209dec1a5e9ff9764f8d986efa134e45bbef8ac7dbcca1  packs/cnpg-operator/0.27.1/customresourcedefinition-scheduledbackups.postgresql.cnpg.io.yaml
 22ef5c829e3d9b2615da196d3257477c0ffe40ea05c0624aaab53aa547996ba8  packs/cnpg-operator/0.27.1/customresourcedefinition-databases.postgresql.cnpg.io.yaml
 3a59480e9f468cd15d29ed1f01d4571d60134491a7ce624568fa0d42d963f122  packs/cnpg-operator/0.27.1/clusterrole-extension-cloudnative-pg-edit.yaml
-0279692e6cfd1607d773b0420f84d59cbed0023839c8569d6b502e25acd24571  packs/cnpg-operator/0.27.1/deployment-extension-cloudnative-pg.yaml
+cb6a6f5488558cf8a668e02c322cef9a6ba721b6a5933a7d3597424d29478152  packs/cnpg-operator/0.27.1/deployment-extension-cloudnative-pg.yaml
 e207095f14c0d562b3f37038ef3e290784cb3aa2c0ffd10de965bc61990a3c39  packs/cnpg-operator/0.27.1/clusterrole-extension-cloudnative-pg-view.yaml
 1a37a9cc8c69736a77e428c7f3d70bcf570a9383d305439c7b3f9580d0625c6e  packs/cnpg-operator/0.27.1/customresourcedefinition-poolers.postgresql.cnpg.io.yaml
 1bddb8c6fcc6062eb4752d7ffa8c5094e40cec5d0797e3d84eab9b2cda4ace97  packs/cnpg-operator/0.27.1/customresourcedefinition-failoverquorums.postgresql.cnpg.io.yaml
