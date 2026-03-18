@@ -3,25 +3,27 @@
 # Maintainer: @dnaeon
 
 NAME=prometheus-operator
-VERSION=v0.89.0
+VERSION=0.89.0
 DESCRIPTION="Prometheus Operator"
 
 package() {
-  local tmpdir=""
-  tmpdir=$( mktemp -d prometheus-operator.XXXXXX )
-  trap "rm -rf ${tmpdir}" EXIT
-
   # Fetch the upstream Prometheus Operator manifests and configure the namespace.
   #
   # See [1] for more details.
   #
   # [1]: https://prometheus-operator.dev/docs/getting-started/installation/#install-using-yaml-files
-  curl -s "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/refs/tags/${VERSION}/kustomization.yaml" > "${tmpdir}/kustomization.yaml"
-  curl -s "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/refs/tags/${VERSION}/bundle.yaml" > "${tmpdir}/bundle.yaml"
-  cd "${tmpdir}" && ${KUSTOMIZE} edit set namespace ${PACK_NAMESPACE} && cd "${OLDPWD}"
+  curl -Ls \
+       -o "${SRC_DIR}/kustomization.yaml" \
+       "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/refs/tags/v${VERSION}/kustomization.yaml"
+
+  curl -Ls \
+       -o "${SRC_DIR}/bundle.yaml" \
+       "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/refs/tags/v${VERSION}/bundle.yaml"
+
+  ${KUSTOMIZE} edit set namespace "${PACK_NAMESPACE}"
 
   # Build the kustomization and slice it up
-  ${KUSTOMIZE} build "${tmpdir}" | \
+  ${KUSTOMIZE} build | \
     ${KUBECTL_SLICE} -f - --output-dir ${PACK_DIR}/
 
   # Add required labels for the Gardener NetworkPolicy controller
