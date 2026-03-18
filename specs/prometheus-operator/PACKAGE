@@ -1,0 +1,42 @@
+# -*- mode: shell-script; sh-basic-offset: 2; -*-
+
+# Maintainer: @dnaeon
+
+NAME=prometheus-operator
+VERSION=v0.89.0
+DESCRIPTION="Prometheus Operator"
+
+package() {
+  local tmpdir=""
+  tmpdir=$( mktemp -d prometheus-operator.XXXXXX )
+  trap "rm -rf ${tmpdir}" EXIT
+
+  # Fetch the upstream Prometheus Operator manifests and configure the namespace.
+  #
+  # See [1] for more details.
+  #
+  # [1]: https://prometheus-operator.dev/docs/getting-started/installation/#install-using-yaml-files
+  curl -s "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/refs/tags/${VERSION}/kustomization.yaml" > "${tmpdir}/kustomization.yaml"
+  curl -s "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/refs/tags/${VERSION}/bundle.yaml" > "${tmpdir}/bundle.yaml"
+  cd "${tmpdir}" && ${KUSTOMIZE} edit set namespace ${PACK_NAMESPACE} && cd "${OLDPWD}"
+
+  # Build the kustomization and slice it up
+  ${KUSTOMIZE} build "${tmpdir}" | \
+    ${KUBECTL_SLICE} -f - --output-dir ${PACK_DIR}/
+
+  # Add required labels for the Gardener NetworkPolicy controller
+  local deployment_file="${PACK_DIR}/deployment-${NAME}.yaml"
+  ${YQ} -i '.spec.template.metadata.labels."networking.gardener.cloud/to-dns"="allowed"' "${deployment_file}"
+  ${YQ} -i '.spec.template.metadata.labels."networking.gardener.cloud/to-apiserver"="allowed"' "${deployment_file}"
+}
+
+package_test() {
+  ${KUBECONFORM} \
+    -strict \
+    -verbose \
+    -summary \
+    -output pretty \
+    -schema-location default \
+    -schema-location "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/{{.NormalizedKubernetesVersion}}/{{.ResourceKind}}.json" \
+    ${PACK_DIR}
+}
