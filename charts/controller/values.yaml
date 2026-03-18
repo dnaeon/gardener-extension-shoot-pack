@@ -132,7 +132,7 @@ securityContext:
 # https://kubernetes.io/docs/concepts/services-networking/service/
 service:
   # Specifies whether a service should be created
-  create: true
+  create: false
   # Service type.
   # See: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
   type: ClusterIP

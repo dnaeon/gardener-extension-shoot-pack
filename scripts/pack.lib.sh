@@ -12,9 +12,9 @@ _PROJECT_ROOT="$( dirname ${_LIB_DIR} )"
 source "${_LIBS_DIR}/logging.lib.sh"
 
 # Export common vars for use by clients
-export PACK_METADATA_DESC=".DESC"
-export PACK_METADATA_NAMESPACE=".NAMESPACE"
-export PACK_METADATA_SUMS=".SUMS"
+
+export PACK_METADATA_DESC="DESC"
+export PACK_METADATA_SUMS="SUMS"
 export PACK_SPEC_FILE="PACKAGE"
 export PACK_RESOURCES_GLOB="*.yaml"
 export ASSETS_PKG="${_PROJECT_ROOT}/pkg/assets"
@@ -22,8 +22,13 @@ export PACK_SPEC_REQUIRED_VARS=(
     NAME
     VERSION
     DESCRIPTION
-    NAMESPACE
 )
+
+# The namespace in which packs get installed is `kube-system', since this is the
+# system namespace used by components deployed by Gardener in shoot clusters.
+#
+# https://gardener.cloud/docs/getting-started/ca-components/#managedresources
+export PACK_NAMESPACE="kube-system"
 
 # Returns the base dir of a pack spec
 #

@@ -2,7 +2,7 @@
 ef432ad44b16ad00dc209dec1a5e9ff9764f8d986efa134e45bbef8ac7dbcca1  packs/cnpg-operator/0.27.1/customresourcedefinition-scheduledbackups.postgresql.cnpg.io.yaml
 22ef5c829e3d9b2615da196d3257477c0ffe40ea05c0624aaab53aa547996ba8  packs/cnpg-operator/0.27.1/customresourcedefinition-databases.postgresql.cnpg.io.yaml
 3a59480e9f468cd15d29ed1f01d4571d60134491a7ce624568fa0d42d963f122  packs/cnpg-operator/0.27.1/clusterrole-extension-cloudnative-pg-edit.yaml
-5967de925ac81db600343cafcb010abf86836a518db62a6b5167b423c215f2c6  packs/cnpg-operator/0.27.1/deployment-extension-cloudnative-pg.yaml
+0279692e6cfd1607d773b0420f84d59cbed0023839c8569d6b502e25acd24571  packs/cnpg-operator/0.27.1/deployment-extension-cloudnative-pg.yaml
 e207095f14c0d562b3f37038ef3e290784cb3aa2c0ffd10de965bc61990a3c39  packs/cnpg-operator/0.27.1/clusterrole-extension-cloudnative-pg-view.yaml
 1a37a9cc8c69736a77e428c7f3d70bcf570a9383d305439c7b3f9580d0625c6e  packs/cnpg-operator/0.27.1/customresourcedefinition-poolers.postgresql.cnpg.io.yaml
 1bddb8c6fcc6062eb4752d7ffa8c5094e40cec5d0797e3d84eab9b2cda4ace97  packs/cnpg-operator/0.27.1/customresourcedefinition-failoverquorums.postgresql.cnpg.io.yaml
@@ -12,10 +12,10 @@ ebb257ee964477bf6b64a2330113f1f7ae3c5bcee23823d01edd98877cae2b64  packs/cnpg-ope
 2d19b97bad07ceb2181e08a3d231942ba25d5037992fe78974a936aa911a7bc4  packs/cnpg-operator/0.27.1/customresourcedefinition-clusters.postgresql.cnpg.io.yaml
 0dfc4090712eb874cd95324e08f1c5be798386d5171a4618c3922ca12be3d549  packs/cnpg-operator/0.27.1/customresourcedefinition-publications.postgresql.cnpg.io.yaml
 934a8c5e7e943426959033014edffc080a51add9aa0c544201f78195607699c8  packs/cnpg-operator/0.27.1/customresourcedefinition-clusterimagecatalogs.postgresql.cnpg.io.yaml
-c3fcc3f35be5ccb96e2457d7d70eed6f5ac844efe9ee074f4cc209d089e41160  packs/cnpg-operator/0.27.1/validatingwebhookconfiguration-cnpg-validating-webhook-configuration.yaml
-8992a27ddd8cc485e4c9cd63b974977d9939cec2a8934171a686028b9a348fad  packs/cnpg-operator/0.27.1/serviceaccount-extension-cloudnative-pg.yaml
-2e1777f41622ee1d3b859cb4f9b397a668070675e6321e3b5fc94f119509214c  packs/cnpg-operator/0.27.1/service-cnpg-webhook-service.yaml
-62aeea0eca59ebbdd896a1ddb56ca3574ce03a79a1d0ccb1356f6b5e71011219  packs/cnpg-operator/0.27.1/configmap-cnpg-controller-manager-config.yaml
-95b4b1c3a7d64c908c7f989e4356b3c967401dd53527b2227232dce32848a9a9  packs/cnpg-operator/0.27.1/clusterrolebinding-extension-cloudnative-pg.yaml
-27407d6b9fc181e02cad2a7391a02456110bed1de51ce51b8c0da6ed1b921d03  packs/cnpg-operator/0.27.1/configmap-cnpg-default-monitoring.yaml
-58b64f0720442f661156c8fb29c8a58fda34bda5edd6dd7a85f2d54a487b2bc2  packs/cnpg-operator/0.27.1/mutatingwebhookconfiguration-cnpg-mutating-webhook-configuration.yaml
+53a2fa923e162e8c39d046663f72ba8d63232d8901940770470a3a7259ae4929  packs/cnpg-operator/0.27.1/validatingwebhookconfiguration-cnpg-validating-webhook-configuration.yaml
+f6e0e8c7e9b10e1e491b41e73244590c3a7380bdc4b33adc44dec09e5a9a610e  packs/cnpg-operator/0.27.1/serviceaccount-extension-cloudnative-pg.yaml
+8b76e22c6e846e5955d40725a5543abf0922d8b0d15c2c862a02d89c97a07ef5  packs/cnpg-operator/0.27.1/service-cnpg-webhook-service.yaml
+82a7e9f6e5ab837f5bebdc39ddf58ca4d08f82b0722fe0d95b994baa724430e1  packs/cnpg-operator/0.27.1/configmap-cnpg-controller-manager-config.yaml
+a92f692152f7c36f5d6066f506cf5a0d964b996a31ccfcaf9e2bba68e853dee1  packs/cnpg-operator/0.27.1/clusterrolebinding-extension-cloudnative-pg.yaml
+6b1f82650de80c1e6e29747322bf0001b2e16cd5d9c3a35eb8005c91604932b4  packs/cnpg-operator/0.27.1/configmap-cnpg-default-monitoring.yaml
+3e9bca219c5343768e4470c7385e39e8be77d51b7bc5d6425a16cd8488cd717c  packs/cnpg-operator/0.27.1/mutatingwebhookconfiguration-cnpg-mutating-webhook-configuration.yaml

@@ -106,7 +106,6 @@ function _build_pack() {
 
   # Generate metadata files for the pack
   _msg_info "Generating metadata files for pack ${NAME}@${VERSION} ..."
-  echo "${NAMESPACE}" > "${PACK_DIR}/${PACK_METADATA_NAMESPACE}"
   echo "${DESCRIPTION}" > "${PACK_DIR}/${PACK_METADATA_DESC}"
 
   # Re-create sums file

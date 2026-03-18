@@ -21,7 +21,6 @@ import (
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -257,16 +256,6 @@ func (a *Actuator) createManagedResourceForPack(ctx context.Context, shootNamesp
 		kubernetes.ShootSerializer,
 	)
 
-	// Namespace for the pack resources
-	packNamespace := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: pack.Namespace,
-		},
-	}
-	if err := registry.Add(packNamespace); err != nil {
-		return fmt.Errorf("unable to register pack namespace resource: %w", err)
-	}
-
 	// Register pack resources with the registry
 	for _, packResource := range pack.Resources {
 		resourceData, err := packResource.Read()
@@ -286,7 +275,14 @@ func (a *Actuator) createManagedResourceForPack(ctx context.Context, shootNamesp
 		for idx, r := range resourceItems {
 			gvk := r.GetGvk()
 			if !gvk.IsClusterScoped() {
-				if err := r.SetNamespace(pack.Namespace); err != nil {
+				// Gardener uses [metav1.NamespaceSystem] as a
+				// system namespace for Gardener-related
+				// components.
+				//
+				// Any resource provided by a pack will be
+				// installed in the the Gardener system
+				// namespace as well.
+				if err := r.SetNamespace(metav1.NamespaceSystem); err != nil {
 					return fmt.Errorf("unable to set namespace for %s: %w", packResource.Path, err)
 				}
 			}

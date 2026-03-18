@@ -8,16 +8,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"slices"
 	"strconv"
 	"time"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
-	extensionscmdcontroller "github.com/gardener/gardener/extensions/pkg/controller/cmd"
-	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
-	extensionscmdwebhook "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/controllerutils"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
@@ -32,11 +28,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	packactuator "github.com/gardener/gardener-extension-shoot-pack/pkg/actuator/pack"
-	gmrmutator "github.com/gardener/gardener-extension-shoot-pack/pkg/admission/mutator/grm"
 	configinstall "github.com/gardener/gardener-extension-shoot-pack/pkg/apis/config/install"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/assets"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/controller"
@@ -65,18 +58,6 @@ type flags struct {
 	clientConnQPS             float32
 	clientConnBurst           int32
 
-	// webhook options
-	webhookServerHost           string
-	webhookServerPort           int
-	webhookServerCertDir        string
-	webhookServerCertName       string
-	webhookServerKeyName        string
-	webhookConfigNamespace      string
-	webhookConfigMode           string
-	webhookConfigURL            string
-	webhookConfigServicePort    int
-	webhookConfigOwnerNamespace string
-
 	// The following flags are meant to be specified by the Helm chart,
 	// which gardenlet will invoke during deployment. The value of each flag
 	// is derived from a list of extra values, which gardenlet passes to
@@ -97,15 +78,6 @@ func (f *flags) getLogger() logr.Logger {
 
 // getManager creates a new [ctrl.Manager] based on the parsed [flags].
 func (f *flags) getManager(ctx context.Context) (ctrl.Manager, error) {
-	webhookOpts := webhook.Options{
-		Host:     f.webhookServerHost,
-		Port:     f.webhookServerPort,
-		CertDir:  f.webhookServerCertDir,
-		CertName: f.webhookServerCertName,
-		KeyName:  f.webhookServerKeyName,
-	}
-	webhookServer := webhook.NewServer(webhookOpts)
-
 	m, err := mgr.New(
 		mgr.WithContext(ctx),
 		mgr.WithAddToScheme(clientgoscheme.AddToScheme),
@@ -126,8 +98,6 @@ func (f *flags) getManager(ctx context.Context) (ctrl.Manager, error) {
 			QPS:   f.clientConnQPS,
 			Burst: f.clientConnBurst,
 		}),
-		mgr.WithWebhookServer(webhookServer),
-		mgr.WithReadyzCheck("webhook-server", webhookServer.StartedChecker()),
 	)
 
 	if err != nil {
@@ -153,33 +123,6 @@ func (f *flags) getManager(ctx context.Context) (ctrl.Manager, error) {
 	}
 
 	return m, nil
-}
-
-// getExtensionWebhookOpts returns [extensionscmdwebhook.AddToManagerOptions]
-// based on the specified command-line flags.
-func (f *flags) getExtensionWebhookOpts() *extensionscmdwebhook.AddToManagerOptions {
-	serverOpts := &extensionscmdwebhook.ServerOptions{
-		Mode:           f.webhookConfigMode,
-		URL:            f.webhookConfigURL,
-		ServicePort:    f.webhookConfigServicePort,
-		Namespace:      f.webhookConfigNamespace,
-		OwnerNamespace: f.webhookConfigOwnerNamespace,
-	}
-
-	generalOpts := &extensionscmdcontroller.GeneralOptions{
-		GardenerVersion: f.gardenerVersion,
-	}
-
-	addToManagerOpts := extensionscmdwebhook.NewAddToManagerOptions(
-		f.extensionName,
-		"",
-		nil,
-		generalOpts,
-		serverOpts,
-		&extensionscmdwebhook.SwitchOptions{},
-	)
-
-	return addToManagerOpts
 }
 
 // flagsKey is the key used to store the parsed command-line flags in a
@@ -373,95 +316,6 @@ func New() *cli.Command {
 					return nil
 				},
 			},
-			&cli.StringFlag{
-				Name:        "webhook-server-host",
-				Usage:       "address on which the webhook server listens on",
-				Sources:     cli.EnvVars("WEBHOOK_SERVER_HOST"),
-				Destination: &flags.webhookServerHost,
-			},
-			&cli.IntFlag{
-				Name:        "webhook-server-port",
-				Value:       9443,
-				Usage:       "port on which the webhook server listens on",
-				Sources:     cli.EnvVars("WEBHOOK_SERVER_PORT"),
-				Destination: &flags.webhookServerPort,
-			},
-			&cli.StringFlag{
-				Name:        "webhook-server-cert-dir",
-				Usage:       "path to directory, which contains the server key and cert",
-				Sources:     cli.EnvVars("WEBHOOK_SERVER_CERT_DIR"),
-				Destination: &flags.webhookServerCertDir,
-			},
-			&cli.StringFlag{
-				Name:        "webhook-server-cert-name",
-				Value:       "tls.crt",
-				Usage:       "the server certificate file name",
-				Sources:     cli.EnvVars("WEBHOOK_SERVER_CERT_NAME"),
-				Destination: &flags.webhookServerCertName,
-			},
-			&cli.StringFlag{
-				Name:        "webhook-server-key-name",
-				Value:       "tls.key",
-				Usage:       "the server certificate key file name",
-				Sources:     cli.EnvVars("WEBHOOK_SERVER_KEY_NAME"),
-				Destination: &flags.webhookServerKeyName,
-			},
-			&cli.StringFlag{
-				Name:        "webhook-config-namespace",
-				Value:       "garden",
-				Usage:       "namespace where the webhook CA bundle, services, etc. are created",
-				Sources:     cli.EnvVars("WEBHOOK_CONFIG_NAMESPACE"),
-				Destination: &flags.webhookConfigNamespace,
-			},
-			&cli.StringFlag{
-				Name:    "webhook-config-mode",
-				Value:   string(extensionswebhook.ModeService),
-				Usage:   "one of service, url or url-service",
-				Sources: cli.EnvVars("WEBHOOK_CONFIG_MODE"),
-				Validator: func(val string) error {
-					supportedModes := []string{
-						string(extensionswebhook.ModeService),
-						string(extensionswebhook.ModeURL),
-						string(extensionswebhook.ModeURLWithServiceName),
-					}
-					if !slices.Contains(supportedModes, val) {
-						return errors.New("invalid webhook config mode specified")
-					}
-
-					return nil
-				},
-				Destination: &flags.webhookConfigMode,
-			},
-			&cli.StringFlag{
-				Name:    "webhook-config-url",
-				Usage:   "URL at which to find the webhook server, used with `url' mode only",
-				Sources: cli.EnvVars("WEBHOOK_CONFIG_URL"),
-				Validator: func(val string) error {
-					_, err := url.Parse(val)
-
-					return err
-				},
-				Destination: &flags.webhookConfigURL,
-			},
-			&cli.IntFlag{
-				Name:    "webhook-config-service-port",
-				Usage:   "service port for the webhook when running in `service' mode",
-				Sources: cli.EnvVars("WEBHOOK_CONFIG_SERVICE_PORT"),
-				Validator: func(val int) error {
-					if val <= 0 {
-						return errors.New("port cannot be negative")
-					}
-
-					return nil
-				},
-				Destination: &flags.webhookConfigServicePort,
-			},
-			&cli.StringFlag{
-				Name:        "webhook-config-owner-namespace",
-				Usage:       "namespace which is used as the owner reference for webhook registration",
-				Sources:     cli.EnvVars("WEBHOOK_CONFIG_OWNER_NAMESPACE"),
-				Destination: &flags.webhookConfigOwnerNamespace,
-			},
 		},
 		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
 			ctrllog.SetLogger(flags.getLogger())
@@ -527,36 +381,6 @@ func runManager(ctx context.Context, cmd *cli.Command) error {
 
 	logger.Info("setting up admission webhooks")
 
-	// Webhooks to be registered
-	webhooks := make([]*extensionswebhook.Webhook, 0)
-	webhookFuncs := []func(m ctrl.Manager) (*extensionswebhook.Webhook, error){
-		gmrmutator.NewWebhook,
-	}
-
-	for _, webhookFunc := range webhookFuncs {
-		wh, err := webhookFunc(m)
-		if err != nil {
-			return fmt.Errorf("failed to create admission webhook: %w", err)
-		}
-		webhooks = append(webhooks, wh)
-	}
-
-	extensionWebhookOpts := flags.getExtensionWebhookOpts()
-	if err := extensionWebhookOpts.Complete(); err != nil {
-		return err
-	}
-	extensionWebhookConfig := extensionWebhookOpts.Completed()
-	extensionWebhookConfig.Switch = extensionscmdwebhook.SwitchConfig{
-		Disabled: false,
-		WebhooksFactory: func(m manager.Manager) ([]*extensionswebhook.Webhook, error) {
-			return webhooks, nil
-		},
-	}
-
-	if _, err := extensionWebhookConfig.AddToManager(ctx, m, nil); err != nil {
-		return fmt.Errorf("failed to setup extension webhook with manager: %w", err)
-	}
-
 	collection, err := assets.New(assets.FS, assets.WithSkipVerify(false))
 	if err != nil {
 		return err
@@ -566,7 +390,6 @@ func runManager(ctx context.Context, cmd *cli.Command) error {
 			"pack provided by extension",
 			"name", pack.Name,
 			"version", pack.Version,
-			"namespace", pack.Namespace,
 		)
 	}
 

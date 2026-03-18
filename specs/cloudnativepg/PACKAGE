@@ -4,7 +4,6 @@
 
 NAME=cnpg-operator
 VERSION=0.27.1
-NAMESPACE=cnpg-system
 DESCRIPTION="CloudNative PostgreSQL Operator"
 
 package() {
@@ -16,7 +15,7 @@ package() {
   ${HELM} template \
           --version ${VERSION} \
           --release-name ${release_name} \
-          --namespace ${NAMESPACE} \
+          --namespace ${PACK_NAMESPACE} \
           cnpg/cloudnative-pg | \
     grep -v '^#' | \
     ${KUBECTL_SLICE} -f - --output-dir ${PACK_DIR}/
@@ -25,6 +24,7 @@ package() {
   local deployment_file="${PACK_DIR}/deployment-${release_name}-cloudnative-pg.yaml"
   ${YQ} -i '.spec.template.metadata.labels."networking.gardener.cloud/to-dns"="allowed"' "${deployment_file}"
   ${YQ} -i '.spec.template.metadata.labels."networking.gardener.cloud/to-apiserver"="allowed"' "${deployment_file}"
+  ${YQ} -i '.spec.template.metadata.labels."networking.gardener.cloud/from-seed"="allowed"' "${deployment_file}"
 }
 
 package_test() {

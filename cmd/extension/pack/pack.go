@@ -123,12 +123,6 @@ func New() *cli.Command {
 						Aliases:  []string{"v"},
 					},
 					&cli.StringFlag{
-						Name:     "namespace",
-						Usage:    "target namespace for pack resources",
-						Required: true,
-						Aliases:  []string{"ns"},
-					},
-					&cli.StringFlag{
 						Name:     "description",
 						Usage:    "pack description",
 						Required: true,
@@ -164,7 +158,6 @@ func runPackList(ctx context.Context, c *cli.Command) error {
 		headers := []string{
 			"NAME",
 			"VERSION",
-			"NAMESPACE",
 			"DESCRIPTION",
 			"RESOURCES",
 		}
@@ -174,7 +167,6 @@ func runPackList(ctx context.Context, c *cli.Command) error {
 			row := []string{
 				pack.Name,
 				pack.Version,
-				pack.Namespace,
 				pack.Description,
 				strconv.Itoa(len(pack.Resources)),
 			}
@@ -317,7 +309,6 @@ func runPackInit(ctx context.Context, c *cli.Command) error {
 
 NAME={{ .Name }}
 VERSION={{ .Version }}
-NAMESPACE={{ .Namespace }}
 DESCRIPTION="{{ .Description }}"
 
 package() {
@@ -342,14 +333,12 @@ package() {
 	data := struct {
 		Name        string
 		Version     string
-		Namespace   string
 		Description string
 		Maintainer  string
 	}{
 		Name:        c.String("name"),
 		Version:     c.String("version"),
 		Description: c.String("description"),
-		Namespace:   c.String("namespace"),
 		Maintainer:  c.String("maintainer"),
 	}
 

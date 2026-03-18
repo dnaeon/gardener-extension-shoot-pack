@@ -92,16 +92,6 @@ function _verify_pack() {
   PACK_DIR="$( realpath "${ASSETS_PKG}/packs/${NAME}/${VERSION}" )"
   export SRC_DIR PACK_DIR
 
-  # Verify NAMESPACE metadata file
-  local _md_file_namespace="${PACK_DIR}/${PACK_METADATA_NAMESPACE}"
-  if [[ ! -f "${_md_file_namespace}" ]]; then
-    _msg_error "_verify_pack: Metadata file not found @ ${_md_file_namespace}" 1
-  fi
-  if [[ "$( cat "${_md_file_namespace}" )" != "${NAMESPACE}" ]]; then
-    _msg_error "_verify_pack: NAMESPACE var from spec differs from metadata file @ ${_md_file_namespace}" 1
-  fi
-  _msg_info "Metadata NAMESPACE file: OK"
-
   # Verify DESC metadata file
   local _md_file_desc="${PACK_DIR}/${PACK_METADATA_DESC}"
   if [[ ! -f "${_md_file_desc}" ]]; then
@@ -132,7 +122,6 @@ function _verify_pack() {
   # Check for extra files in pack dir
   local _extra_files=""
   _extra_files=$( find "${PACK_DIR}" -type f \
-                       -not -iname "${PACK_METADATA_NAMESPACE}" -a \
                        -not -iname "${PACK_METADATA_DESC}" -a \
                        -not -iname "${PACK_METADATA_SUMS}" -a \
                        -not -iname "${PACK_RESOURCES_GLOB}" -print )

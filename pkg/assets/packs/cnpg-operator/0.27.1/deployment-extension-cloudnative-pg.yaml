@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: extension-cloudnative-pg
-  namespace: cnpg-system
+  namespace: kube-system
   labels:
     helm.sh/chart: cloudnative-pg-0.27.1
     app.kubernetes.io/name: cloudnative-pg
@@ -18,14 +18,15 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/rbac: 5104dbf091e7f5be1e637838564dd26b82a728dc929cc94a96fb6c5615db53bd
-        checksum/config: 915d0a6015beebd7203433db53a376bdaa5192e6779a8d6ee2b07a9a3a99677c
-        checksum/monitoring-config: 0779dbd8168e93362db3d1971d972d8c4b57ba5a482233d5faea1ad2b76264b7
+        checksum/rbac: 22f455173dd337d37a3f36e59945e849255edfa6053a2255bf25105d87eeb6bf
+        checksum/config: f5d7e1f91c3647dc2e146d2fbdd57df89cfa8400f97d28c852c7594c75ce9200
+        checksum/monitoring-config: 63ec9af6d848e2eb9acff5b889ec3dc6a70ee1b8ccdeb37fc4a9639fba36a0f4
       labels:
         app.kubernetes.io/name: cloudnative-pg
         app.kubernetes.io/instance: extension
         networking.gardener.cloud/to-dns: allowed
         networking.gardener.cloud/to-apiserver: allowed
+        networking.gardener.cloud/from-seed: allowed
     spec:
       containers:
         - args:

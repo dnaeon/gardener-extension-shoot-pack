@@ -23,24 +23,19 @@ import (
 type MetaFile = string
 
 const (
-	// MetaFileNamespace specifies the file, which contains the target
-	// namespace for pack resources.
-	MetaFileNamespace MetaFile = ".NAMESPACE"
-
 	// MetaFileDesc specifies the file, which provides a short summary of a
 	// pack.
-	MetaFileDesc MetaFile = ".DESC"
+	MetaFileDesc MetaFile = "DESC"
 
 	// MetaFileSums specifies the file, which provides the checksums of pack
 	// resources.
-	MetaFileSums MetaFile = ".SUMS"
+	MetaFileSums MetaFile = "SUMS"
 )
 
 // FS is an [embed.FS], which bundles the builtin packs.
 //
-//go:embed packs/*/*/.DESC
-//go:embed packs/*/*/.NAMESPACE
-//go:embed packs/*/*/.SUMS
+//go:embed packs/*/*/DESC
+//go:embed packs/*/*/SUMS
 //go:embed packs/*/*/*.yaml
 var FS embed.FS
 
@@ -161,12 +156,6 @@ func New(fileSystem fs.FS, opts ...Option) (*Collection, error) {
 			return nil, fmt.Errorf("unable to read description file for pack %s@%s: %w", packName, packVersion, err)
 		}
 
-		namespacePath := filepath.Join(packDir, MetaFileNamespace)
-		namespace, err := fs.ReadFile(fileSystem, namespacePath)
-		if err != nil {
-			return nil, fmt.Errorf("unable to read namespace file for pack %s@%s: %w", packName, packVersion, err)
-		}
-
 		sumsPath := filepath.Join(packDir, MetaFileSums)
 		sumsData, err := fs.ReadFile(fileSystem, sumsPath)
 		if err != nil {
@@ -197,7 +186,6 @@ func New(fileSystem fs.FS, opts ...Option) (*Collection, error) {
 			Name:        packName,
 			Version:     packVersion,
 			Description: strings.TrimSpace(string(desc)),
-			Namespace:   strings.TrimSpace(string(namespace)),
 			Resources:   resources,
 			BaseDir:     packDir,
 			fileSystem:  fileSystem,
@@ -233,9 +221,6 @@ type Pack struct {
 	// Version specifies the pack version.
 	Version string `json:"version,omitzero"`
 
-	// Namespace specifies the namespace in which resources will be deployed.
-	Namespace string `json:"namespace,omitzero"`
-
 	// Description provides a short summary of the pack.
 	Description string `json:"description,omitzero"`
 
@@ -263,10 +248,6 @@ func (p *Pack) Verify() error {
 
 	if p.Description == "" {
 		allErrs = append(allErrs, fmt.Errorf("missing description for pack %s@%s", p.Name, p.Version))
-	}
-
-	if p.Namespace == "" {
-		allErrs = append(allErrs, fmt.Errorf("missing namespace for pack %s@%s", p.Name, p.Version))
 	}
 
 	if len(p.Resources) == 0 {
