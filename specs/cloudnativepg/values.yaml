@@ -1,0 +1,5 @@
+podLabels:
+  networking.gardener.cloud/to-dns: allowed
+  networking.gardener.cloud/to-apiserver: allowed
+  networking.gardener.cloud/from-seed: allowed
+  networking.gardener.cloud/to-public-networks: allowed

@@ -16,16 +16,10 @@ package() {
           --version ${VERSION} \
           --release-name ${release_name} \
           --namespace ${PACK_NAMESPACE} \
+          --values ${SRC_DIR}/values.yaml \
           cnpg/cloudnative-pg | \
     grep -v '^#' | \
     ${KUBECTL_SLICE} -f - --output-dir ${PACK_DIR}/
-
-  # Add required labels for the Gardener NetworkPolicy controller
-  local deployment_file="${PACK_DIR}/deployment-${release_name}-cloudnative-pg.yaml"
-  ${YQ} -i '.spec.template.metadata.labels."networking.gardener.cloud/to-dns"="allowed"' "${deployment_file}"
-  ${YQ} -i '.spec.template.metadata.labels."networking.gardener.cloud/to-apiserver"="allowed"' "${deployment_file}"
-  ${YQ} -i '.spec.template.metadata.labels."networking.gardener.cloud/from-seed"="allowed"' "${deployment_file}"
-  ${YQ} -i '.spec.template.metadata.labels."networking.gardener.cloud/to-public-networks"="allowed"' "${deployment_file}"
 }
 
 package_test() {
