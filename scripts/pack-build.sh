@@ -102,7 +102,7 @@ function _build_pack() {
 
   # Package it up
   _msg_info "Building pack ${NAME}@${VERSION} ..."
-  package
+  cd "${SRC_DIR}" && package
 
   # Generate metadata files for the pack
   _msg_info "Generating metadata files for pack ${NAME}@${VERSION} ..."
