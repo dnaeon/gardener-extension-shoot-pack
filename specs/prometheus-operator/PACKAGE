@@ -13,10 +13,6 @@ package() {
   #
   # [1]: https://prometheus-operator.dev/docs/getting-started/installation/#install-using-yaml-files
   curl -Ls \
-       -o "${SRC_DIR}/kustomization.yaml" \
-       "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/refs/tags/v${VERSION}/kustomization.yaml"
-
-  curl -Ls \
        -o "${SRC_DIR}/bundle.yaml" \
        "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/refs/tags/v${VERSION}/bundle.yaml"
 
@@ -25,11 +21,6 @@ package() {
   # Build the kustomization and slice it up
   ${KUSTOMIZE} build | \
     ${KUBECTL_SLICE} -f - --output-dir ${PACK_DIR}/
-
-  # Add required labels for the Gardener NetworkPolicy controller
-  local deployment_file="${PACK_DIR}/deployment-${NAME}.yaml"
-  ${YQ} -i '.spec.template.metadata.labels."networking.gardener.cloud/to-dns"="allowed"' "${deployment_file}"
-  ${YQ} -i '.spec.template.metadata.labels."networking.gardener.cloud/to-apiserver"="allowed"' "${deployment_file}"
 }
 
 package_test() {
