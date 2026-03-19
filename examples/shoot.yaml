@@ -16,6 +16,10 @@ spec:
           packs:
           - name: cnpg-operator
             version: "0.27.1"
+          - name: prometheus-operator
+            version: "0.89.0"
+          - name: valkey-operator
+            version: "0.0.61"
   cloudProfile:
     name: local
     kind: CloudProfile
