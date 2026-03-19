@@ -82,9 +82,9 @@ function _verify_pack() {
   _msg_info "Verifying ${NAME}@${VERSION} pack ..."
 
   # Each pack spec must define a `package()' function
-  type -t package >& /dev/null || {
+  if [[ $( type -t package ) != "function" ]]; then
     _msg_error "_verify_pack: ${_pack_spec_file} does not provide a package() function" 1
-  }
+  fi
   _msg_info "package() is defined: OK"
 
   # Make SRC_DIR and PACK_DIR available to the pack spec
@@ -114,10 +114,10 @@ function _verify_pack() {
   cd "${OLDPWD}"
 
   # Each pack may optionally define a `package_test()' function
-  type -t package_test >& /dev/null && {
+  if [[ $( type -t package_test ) == "function" ]]; then
     _msg_info "package_test() is defined: OK"
-    package_test
-  }
+    cd "${SRC_DIR}" && package_test && cd "${OLDPWD}"
+  fi
 
   # Check for extra files in pack dir
   local _extra_files=""

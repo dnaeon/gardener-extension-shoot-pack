@@ -81,9 +81,9 @@ function _build_pack() {
   done
 
   # Each pack spec must define a `package()' function
-  type -t package >& /dev/null || {
+  if [[ $( type -t package ) != "function" ]]; then
     _msg_error "_build_pack: ${_pack_spec_file} does not provide a package() function" 1
-  }
+  fi
 
   _msg_info "Setting up environment for pack ${NAME}@${VERSION} ..."
   SRC_DIR="${_pack_spec_base_dir}"  # Source directory points to the pack spec dir
@@ -102,7 +102,7 @@ function _build_pack() {
 
   # Package it up
   _msg_info "Building pack ${NAME}@${VERSION} ..."
-  cd "${SRC_DIR}" && package
+  cd "${SRC_DIR}" && package && cd "${OLDPWD}"
 
   # Generate metadata files for the pack
   _msg_info "Generating metadata files for pack ${NAME}@${VERSION} ..."
