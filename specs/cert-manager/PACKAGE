@@ -1,0 +1,36 @@
+# -*- mode: shell-script; sh-basic-offset: 2; -*-
+
+# Maintainer: @theoddora
+
+NAME=cert-manager-operator
+VERSION=1.20.0
+DESCRIPTION="Cert-manager operator for TLS certificates management"
+
+package() {
+  local release_name="extension"
+
+  # Render the upstream chart, clean it up, and slice it up.
+  ${HELM} template \
+          --version v${VERSION} \
+          --release-name ${release_name} \
+          --namespace ${PACK_NAMESPACE} \
+          --set crds.enabled=true \
+          --values ${SRC_DIR}/values.yaml \
+          oci://quay.io/jetstack/charts/cert-manager | \
+    grep -v '^#' | \
+    ${KUBECTL_SLICE} \
+      --exclude-kind Namespace \
+      --template '{{.kind | lower}}-{{.metadata.name | replace ":" "-"}}.yaml' \
+      -f - --output-dir ${PACK_DIR}/
+}
+
+package_test() {
+  ${KUBECONFORM} \
+    -strict \
+    -verbose \
+    -summary \
+    -output pretty \
+    -schema-location default \
+    -schema-location "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/{{.NormalizedKubernetesVersion}}/{{.ResourceKind}}.json" \
+    ${PACK_DIR}
+}

@@ -1,0 +1,15 @@
+podLabels:
+  networking.gardener.cloud/to-dns: allowed
+  networking.gardener.cloud/to-apiserver: allowed
+  networking.gardener.cloud/to-public-networks: allowed
+
+webhook:
+  podLabels:
+    networking.gardener.cloud/to-dns: allowed
+    networking.gardener.cloud/to-apiserver: allowed
+    networking.gardener.cloud/from-seed: allowed
+
+cainjector:
+  podLabels:
+    networking.gardener.cloud/to-dns: allowed
+    networking.gardener.cloud/to-apiserver: allowed
