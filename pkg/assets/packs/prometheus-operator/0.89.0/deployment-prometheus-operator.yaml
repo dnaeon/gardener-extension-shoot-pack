@@ -21,8 +21,10 @@ spec:
         app.kubernetes.io/component: controller
         app.kubernetes.io/name: prometheus-operator
         app.kubernetes.io/version: 0.89.0
+        networking.gardener.cloud/from-seed: allowed
         networking.gardener.cloud/to-apiserver: allowed
         networking.gardener.cloud/to-dns: allowed
+        networking.gardener.cloud/to-public-networks: allowed
     spec:
       automountServiceAccountToken: true
       containers:

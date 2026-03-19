@@ -3,7 +3,7 @@ f1bf0cd3a89d9746da3376f1b23e26277dc45d4961566cfc3bd1a1fede3c6145  packs/valkey-o
 5ae44725afb92a4e2ff5d69e365b20f850ed41ea66dd8563dd9320fd85fbdc37  packs/valkey-operator/0.0.61/configmap-valkey-operator-config.yaml
 43d07c79c95d259dcd72d512730ce4c1d4722695ac5bdc7c8e7809c2108b33f7  packs/valkey-operator/0.0.61/clusterrole-valkey-operator-valkey-editor-role.yaml
 7ede84c7b05272b5c277353136bd58fe5914b922af36a6a8fb103d5d61514a0a  packs/valkey-operator/0.0.61/serviceaccount-valkey-operator-controller-manager.yaml
-f10c3600b007fc990332981ebd63f0efa9f535ec72b63fa73f6f0b84de6a511a  packs/valkey-operator/0.0.61/deployment-valkey-operator-controller-manager.yaml
+5f7510f9ce8510fe413fb668dd3abf9582be451644cc13b465c62177d77f45b9  packs/valkey-operator/0.0.61/deployment-valkey-operator-controller-manager.yaml
 b701be492e3965126d9137710aa6ab356dd4702382fb65dec03500f392697589  packs/valkey-operator/0.0.61/rolebinding-valkey-operator-leader-election-rolebinding.yaml
 be0dad020c047a1652dd5a0a46254d81f042322cf98271498f02969de78f5785  packs/valkey-operator/0.0.61/role-valkey-operator-leader-election-role.yaml
 afae538708dcafaa4c900b51bf93f4583b7575551ce0bf8d2ccfa668bf57e6c6  packs/valkey-operator/0.0.61/customresourcedefinition-valkeys.hyperspike.io.yaml
