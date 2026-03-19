@@ -19,7 +19,7 @@ package() {
           --values ${SRC_DIR}/values.yaml \
           cnpg/cloudnative-pg | \
     grep -v '^#' | \
-    ${KUBECTL_SLICE} -f - --output-dir ${PACK_DIR}/
+    ${KUBECTL_SLICE} --exclude-kind Namespace -f - --output-dir ${PACK_DIR}/
 }
 
 package_test() {

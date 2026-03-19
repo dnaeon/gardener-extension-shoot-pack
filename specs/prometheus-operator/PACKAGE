@@ -20,7 +20,7 @@ package() {
 
   # Build the kustomization and slice it up
   ${KUSTOMIZE} build | \
-    ${KUBECTL_SLICE} -f - --output-dir ${PACK_DIR}/
+    ${KUBECTL_SLICE} --exclude-kind Namespace -f - --output-dir ${PACK_DIR}/
 }
 
 package_test() {
