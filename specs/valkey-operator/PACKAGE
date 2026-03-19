@@ -1,0 +1,35 @@
+# -*- mode: shell-script; sh-basic-offset: 2; -*-
+
+# Maintainer: @dnaeon
+
+NAME=valkey-operator
+VERSION=0.0.61
+DESCRIPTION="Valkey Operator"
+
+package() {
+  # Fetch the upstream bundle and configure the namespace.
+  #
+  # See [1] for more details.
+  #
+  # [1]: https://docs.hyperspike.io/valkey-operator/install/
+  curl -Ls \
+       -o "${SRC_DIR}/bundle.yaml" \
+       "https://github.com/hyperspike/valkey-operator/releases/download/v${VERSION}/install.yaml"
+
+  ${KUSTOMIZE} edit set namespace "${PACK_NAMESPACE}"
+
+  # Build the kustomization and slice it up
+  ${KUSTOMIZE} build | \
+    ${KUBECTL_SLICE} -f - --output-dir ${PACK_DIR}/
+}
+
+package_test() {
+  ${KUBECONFORM} \
+    -strict \
+    -verbose \
+    -summary \
+    -output pretty \
+    -schema-location default \
+    -schema-location "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/{{.NormalizedKubernetesVersion}}/{{.ResourceKind}}.json" \
+    ${PACK_DIR}
+}
