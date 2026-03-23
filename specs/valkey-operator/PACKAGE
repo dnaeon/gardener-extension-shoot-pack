@@ -3,7 +3,7 @@
 # Maintainer: @dnaeon
 
 NAME=valkey-operator
-VERSION=0.0.61
+VERSION=v0.0.61
 DESCRIPTION="Valkey Operator"
 
 package() {
@@ -14,7 +14,7 @@ package() {
   # [1]: https://docs.hyperspike.io/valkey-operator/install/
   curl -Ls \
        -o "${SRC_DIR}/bundle.yaml" \
-       "https://github.com/hyperspike/valkey-operator/releases/download/v${VERSION}/install.yaml"
+       "https://github.com/hyperspike/valkey-operator/releases/download/${VERSION}/install.yaml"
 
   ${KUSTOMIZE} edit set namespace "${PACK_NAMESPACE}"
 
