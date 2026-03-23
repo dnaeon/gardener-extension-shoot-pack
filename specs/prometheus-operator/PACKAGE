@@ -3,7 +3,7 @@
 # Maintainer: @dnaeon
 
 NAME=prometheus-operator
-VERSION=0.89.0
+VERSION=v0.89.0
 DESCRIPTION="Prometheus Operator"
 
 package() {
@@ -14,7 +14,7 @@ package() {
   # [1]: https://prometheus-operator.dev/docs/getting-started/installation/#install-using-yaml-files
   curl -Ls \
        -o "${SRC_DIR}/bundle.yaml" \
-       "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/refs/tags/v${VERSION}/bundle.yaml"
+       "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/refs/tags/${VERSION}/bundle.yaml"
 
   ${KUSTOMIZE} edit set namespace "${PACK_NAMESPACE}"
 
