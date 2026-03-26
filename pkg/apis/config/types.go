@@ -6,7 +6,24 @@ package config
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/kustomize/api/types"
 )
+
+// ResourceReference references a resource in the Garden cluster.
+type ResourceReference struct {
+	// Name specifies the name of the referenced resource from the shoot spec.
+	Name string
+}
+
+// PatchSpec describes a patch for pack resources.
+type PatchSpec struct {
+	// ResourceRef points to a referenced resource name, which is a secret
+	// providing patches for pack resources.
+	ResourceRef ResourceReference
+
+	// Target points to the resources that the patch is applied to.
+	Target *types.Selector
+}
 
 // Pack describes a pack.
 type Pack struct {
@@ -15,6 +32,9 @@ type Pack struct {
 
 	// Version specifies the version of the pack.
 	Version string
+
+	// Patches specifies a list of optional patches.
+	Patches []PatchSpec
 }
 
 // PackConfigSpec defines the desired state of [PackConfig]
