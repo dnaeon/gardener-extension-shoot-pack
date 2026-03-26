@@ -9,21 +9,13 @@ import (
 	"sigs.k8s.io/kustomize/api/types"
 )
 
-// ResourceReference references a resource in the Garden cluster.
-type ResourceReference struct {
-	// Name specifies the name of the referenced resource from the shoot spec.
-	//
-	// +k8s:required
-	Name string `json:"name,omitzero"`
-}
-
 // PatchSpec describes a patch for pack resources.
 type PatchSpec struct {
 	// ResourceRef points to a referenced resource name, which is a secret
 	// providing patches for pack resources.
 	//
 	// +k8s:required
-	ResourceRef ResourceReference `json:"resourceRef,omitzero"`
+	ResourceRef string `json:"resourceRef,omitzero"`
 
 	// Target points to the resources that the patch is applied to.
 	//
