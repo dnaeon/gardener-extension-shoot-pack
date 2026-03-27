@@ -243,12 +243,12 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 	disabledPacks := make([]config.Pack, 0)
 	for _, packSpec := range cfg.Spec.Packs {
 		if !a.collection.PackExists(packSpec.Name, packSpec.Version) {
-			return fmt.Errorf("pack %s@%s does not exist", packSpec.Name, packSpec.Version)
+			return fmt.Errorf("pack %s does not exist", packSpec.String())
 		}
 
 		packAsset, err := a.collection.GetPack(packSpec.Name, packSpec.Version)
 		if err != nil {
-			return fmt.Errorf("unable to get pack %s@%s: %w", packSpec.Name, packSpec.Version, err)
+			return fmt.Errorf("unable to get pack %s: %w", packSpec.String(), err)
 		}
 
 		logger.Info(
@@ -258,7 +258,7 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 			"cluster", cluster.ObjectMeta.Name,
 		)
 		if err := a.reconcilePack(ctx, cluster, packSpec, packAsset); err != nil {
-			return fmt.Errorf("unable to reconcile %s@%s: %w", packSpec.Name, packSpec.Version, err)
+			return fmt.Errorf("unable to reconcile %s: %w", packSpec.String(), err)
 		}
 		enabledPacks = append(enabledPacks, packSpec)
 	}
@@ -294,14 +294,14 @@ func (a *Actuator) reconcilePack(ctx context.Context, cluster *extensions.Cluste
 	// Create a kustomization filesystem for the pack resources
 	fs, err := a.kustomizeFilesystemForPack(ctx, cluster, packSpec, packAsset)
 	if err != nil {
-		return fmt.Errorf("unable to create kustomize filesystem for %s@%s: %w", packSpec.Name, packSpec.Version, err)
+		return fmt.Errorf("unable to create kustomize filesystem for %s: %w", packSpec.String(), err)
 	}
 
 	// Build the resources
 	kustomizer := krusty.MakeKustomizer(krusty.MakeDefaultOptions())
 	resMap, err := kustomizer.Run(fs, packAsset.BaseDir)
 	if err != nil {
-		return fmt.Errorf("unable to render kustomization for %s@%s: %w", packSpec.Name, packSpec.Version, err)
+		return fmt.Errorf("unable to render kustomization for %s: %w", packSpec.String(), err)
 	}
 
 	// Register resources with the Managed Resources registry
@@ -380,10 +380,9 @@ func (a *Actuator) kustomizeFilesystemForPack(ctx context.Context, cluster *exte
 		secret, err := a.secretFromResourceRef(ctx, patchSpec.ResourceRef, cluster.Shoot)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to get patch from referenced resource %s for %s@%s: %w",
+				"unable to get patch from referenced resource %s for %s: %w",
 				patchSpec.ResourceRef,
-				packSpec.Name,
-				packSpec.Version,
+				packSpec.String(),
 				err,
 			)
 		}
@@ -393,11 +392,10 @@ func (a *Actuator) kustomizeFilesystemForPack(ctx context.Context, cluster *exte
 			patchFile := fmt.Sprintf("patch-%s-%s", secret.Name, key)
 			if err := fs.WriteFile(filepath.Join(packAsset.BaseDir, patchFile), patchData); err != nil {
 				return nil, fmt.Errorf(
-					"unable to write patch from referenced resource %s/%s for %s@%s: %w",
+					"unable to write patch from referenced resource %s/%s for %s: %w",
 					patchSpec.ResourceRef,
 					key,
-					packSpec.Name,
-					packSpec.Version,
+					packSpec.String(),
 					err,
 				)
 			}
