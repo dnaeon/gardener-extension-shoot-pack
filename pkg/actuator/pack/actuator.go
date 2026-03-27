@@ -72,6 +72,7 @@ type Actuator struct {
 	client          client.Client
 	decoder         runtime.Decoder
 	resourceFactory *resource.Factory
+	collection      *assets.Collection
 
 	// The following fields are usually derived from the list of extra Helm
 	// values provided by gardenlet during the deployment of the extension.
@@ -111,6 +112,14 @@ func New(c client.Client, opts ...Option) (*Actuator, error) {
 		act.decoder = serializer.NewCodecFactory(c.Scheme(), serializer.EnableStrict).UniversalDecoder()
 	}
 
+	if act.collection == nil {
+		collection, err := assets.New(assets.FS, assets.WithSkipVerify(false))
+		if err != nil {
+			return nil, fmt.Errorf("unable to create pack collection: %w", err)
+		}
+		act.collection = collection
+	}
+
 	return act, nil
 }
 
@@ -147,6 +156,19 @@ func WithGardenerVersion(v string) Option {
 func WithGardenletFeatures(feats map[featuregate.Feature]bool) Option {
 	opt := func(a *Actuator) error {
 		a.gardenletFeatureGates = feats
+
+		return nil
+	}
+
+	return opt
+}
+
+// WithPackCollection is an [Option], which configures the [Actuator] with the
+// given [assets.Collection]. Packs will be reconciled based on the provided
+// [assets.Collection].
+func WithPackCollection(collection *assets.Collection) Option {
+	opt := func(a *Actuator) error {
+		a.collection = collection
 
 		return nil
 	}
@@ -217,19 +239,14 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 	}
 
 	// Each pack gets its own managed resource
-	collection, err := assets.New(assets.FS, assets.WithSkipVerify(false))
-	if err != nil {
-		return err
-	}
-
 	enabledPacks := make([]config.Pack, 0)
 	disabledPacks := make([]config.Pack, 0)
 	for _, packSpec := range cfg.Spec.Packs {
-		if !collection.PackExists(packSpec.Name, packSpec.Version) {
+		if !a.collection.PackExists(packSpec.Name, packSpec.Version) {
 			return fmt.Errorf("pack %s@%s does not exist", packSpec.Name, packSpec.Version)
 		}
 
-		packAsset, err := collection.GetPack(packSpec.Name, packSpec.Version)
+		packAsset, err := a.collection.GetPack(packSpec.Name, packSpec.Version)
 		if err != nil {
 			return fmt.Errorf("unable to get pack %s@%s: %w", packSpec.Name, packSpec.Version, err)
 		}
@@ -247,7 +264,7 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 	}
 
 	// Delete ManagedResources for packs, which have not been configured.
-	for _, pack := range collection.Packs {
+	for _, pack := range a.collection.Packs {
 		if !slices.ContainsFunc(enabledPacks, func(item config.Pack) bool {
 			return item.Name == pack.Name && item.Version == pack.Version
 		}) {
@@ -472,12 +489,7 @@ func (a *Actuator) Delete(ctx context.Context, logger logr.Logger, ex *extension
 	logger.Info("deleting resources managed by extension")
 
 	// Delete all managed resources for all packs
-	collection, err := assets.New(assets.FS, assets.WithSkipVerify(false))
-	if err != nil {
-		return err
-	}
-
-	for _, pack := range collection.Packs {
+	for _, pack := range a.collection.Packs {
 		mrName := fmt.Sprintf("%s-%s", ManagedResourcePrefix, pack.Name)
 		if err := managedresources.DeleteForShoot(ctx, a.client, ex.Namespace, mrName); client.IgnoreNotFound(err) != nil {
 			return err
