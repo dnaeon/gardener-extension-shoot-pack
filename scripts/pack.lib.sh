@@ -28,6 +28,8 @@ export PACK_SPEC_REQUIRED_VARS=(
 # system namespace used by components deployed by Gardener in shoot clusters.
 #
 # https://gardener.cloud/docs/getting-started/ca-components/#managedresources
+# https://github.com/gardener/gardener/issues/14342
+# https://github.com/gardener/gardener/pull/14335
 export PACK_NAMESPACE="kube-system"
 
 # Returns the base dir of a pack spec
