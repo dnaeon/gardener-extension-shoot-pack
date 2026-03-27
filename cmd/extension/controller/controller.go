@@ -340,6 +340,19 @@ func runManager(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	logger.Info("loading pack collection")
+	collection, err := assets.New(assets.FS, assets.WithSkipVerify(false))
+	if err != nil {
+		return err
+	}
+	for _, pack := range collection.Packs {
+		logger.Info(
+			"pack provided by extension",
+			"pack_name", pack.Name,
+			"pack_version", pack.Version,
+		)
+	}
+
 	logger.Info("creating actuators")
 	decoder := serializer.NewCodecFactory(m.GetScheme(), serializer.EnableStrict).UniversalDecoder()
 	act, err := packactuator.New(
@@ -347,6 +360,7 @@ func runManager(ctx context.Context, cmd *cli.Command) error {
 		packactuator.WithDecoder(decoder),
 		packactuator.WithGardenerVersion(flags.gardenerVersion),
 		packactuator.WithGardenletFeatures(flags.gardenletFeatureGates),
+		packactuator.WithPackCollection(collection),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create actuator: %w", err)
@@ -377,20 +391,6 @@ func runManager(ctx context.Context, cmd *cli.Command) error {
 	}
 	for feat, enabled := range flags.gardenletFeatureGates {
 		logger.Info("configured gardenlet feature gate", "feature", feat, "enabled", enabled)
-	}
-
-	logger.Info("setting up admission webhooks")
-
-	collection, err := assets.New(assets.FS, assets.WithSkipVerify(false))
-	if err != nil {
-		return err
-	}
-	for _, pack := range collection.Packs {
-		logger.Info(
-			"pack provided by extension",
-			"name", pack.Name,
-			"version", pack.Version,
-		)
 	}
 
 	logger.Info("starting manager")
