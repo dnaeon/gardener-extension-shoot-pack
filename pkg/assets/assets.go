@@ -268,6 +268,11 @@ func (p *Pack) ReadFile(path string) ([]byte, error) {
 	return fs.ReadFile(p.fileSystem, filepath.Join(p.BaseDir, path))
 }
 
+// String implements the [fmt.Stringer] interface.
+func (p *Pack) String() string {
+	return fmt.Sprintf("%s@%s", p.Name, p.Version)
+}
+
 // Resource represents a resource from a [Pack].
 type Resource struct {
 	// Path represents the path to the resource.
