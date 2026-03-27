@@ -313,6 +313,13 @@ func (a *Actuator) reconcilePack(ctx context.Context, cluster *extensions.Cluste
 	for idx, r := range resMap.Resources() {
 		name := r.GetName()
 		gvk := r.GetGvk()
+
+		// Skip Namespace resources, since whatever we deploy goes into
+		// [metav1.NamespaceSystem].
+		if gvk.Kind == "Namespace" {
+			continue
+		}
+
 		data, err := r.AsYAML()
 		if err != nil {
 			return fmt.Errorf("unable to marshal %s %s: %w", name, gvk.String(), err)
