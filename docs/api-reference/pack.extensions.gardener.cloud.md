@@ -59,23 +59,7 @@ _Appears in:_
 
 | Field | Description | Default | Validation |
 | --- | --- | --- | --- |
-| `resourceRef` _[ResourceReference](#resourcereference)_ | ResourceRef points to a referenced resource name, which is a secret<br />providing patches for pack resources. |  | Required: \{\} <br /> |
+| `resourceRef` _string_ | ResourceRef points to a referenced resource name, which is a secret<br />providing patches for pack resources. |  | Required: \{\} <br /> |
 | `target` _[Selector](#selector)_ | Target points to the resources that the patch is applied to. |  | Optional: \{\} <br /> |
-
-
-#### ResourceReference
-
-
-
-ResourceReference references a resource in the Garden cluster.
-
-
-
-_Appears in:_
-- [PatchSpec](#patchspec)
-
-| Field | Description | Default | Validation |
-| --- | --- | --- | --- |
-| `name` _string_ | Name specifies the name of the referenced resource from the shoot spec. |  | Required: \{\} <br /> |
 
 
