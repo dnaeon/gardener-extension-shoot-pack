@@ -126,7 +126,7 @@ function _verify_pack() {
                        -not -iname "${PACK_METADATA_SUMS}" -a \
                        -not -iname "${PACK_RESOURCES_GLOB}" -print )
 
-  while read _extra_file; do
+  while read -r _extra_file; do
     if [[ -z "${_extra_file}" ]]; then
       continue
     fi

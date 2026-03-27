@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# -*- mode: bash-ts-mode; sh-basic-offset 2; -*-
+# shellcheck shell=bash
 
 _LIB_NAME="${0##*/}"
 _LIB_DIR=$( dirname "$(readlink -f -- "${0}")" )
-_PROJECT_ROOT="$( dirname ${_LIB_DIR} )"
+_PROJECT_ROOT="$( dirname "${_LIB_DIR}" )"
 
 # shellcheck source=/dev/null
-source "${_LIBS_DIR}/logging.lib.sh"
+source "${_LIB_DIR}/logging.lib.sh"
 
 # Export common vars for use by clients
 
@@ -43,9 +43,9 @@ function _get_pack_spec_base_dir() {
     _msg_error "_get_pack_base_dir: empty pack dir specified" 1
   fi
 
-  if [[ "$( basename ${_path} )" == "${PACK_SPEC_FILE}" ]]; then
+  if [[ "$( basename "${_path}" )" == "${PACK_SPEC_FILE}" ]]; then
     # We were called with a path to a pack file
-    _base_dir="$( dirname ${_path} )"
+    _base_dir="$( dirname "${_path}" )"
   elif [[ -f "${_path}/${PACK_SPEC_FILE}" ]]; then
     # We were called with a path, which contains a pack file
     _base_dir="${_path}"
@@ -53,5 +53,5 @@ function _get_pack_spec_base_dir() {
     _msg_error "_get_pack_base_dir: unable to find a pack spec at path ${_path}" 1
   fi
 
-  echo "$( realpath ${_base_dir} )"
+  realpath "${_base_dir}"
 }

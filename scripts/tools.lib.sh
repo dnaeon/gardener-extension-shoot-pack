@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# -*- mode: bash-ts-mode; sh-basic-offset 2; -*-
+# shellcheck shell=bash
 
 _LIB_NAME="${0##*/}"
 _LIB_DIR=$( dirname "$(readlink -f -- "${0}")" )

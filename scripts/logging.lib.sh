@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# -*- mode: bash-ts-mode; sh-basic-offset 2; -*-
+# shellcheck shell=bash
 
 _SCRIPT_NAME="${0##*/}"
 
