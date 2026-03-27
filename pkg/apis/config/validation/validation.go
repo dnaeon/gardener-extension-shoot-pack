@@ -70,6 +70,15 @@ func Validate(cfg config.PackConfig) error {
 			idx:     idx,
 		}
 		seenPacks = append(seenPacks, seen)
+
+		for patchIdx, patch := range pack.Patches {
+			if patch.ResourceRef == "" {
+				allErrs = append(
+					allErrs,
+					field.Required(field.NewPath("spec.packs").Index(idx).Child("patches").Index(patchIdx), "empty resource ref"),
+				)
+			}
+		}
 	}
 
 	return allErrs.ToAggregate()
