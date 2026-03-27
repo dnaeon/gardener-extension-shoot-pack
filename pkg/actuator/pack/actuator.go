@@ -17,26 +17,39 @@ import (
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	v1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
+	"github.com/gardener/gardener/pkg/extensions"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/component-base/featuregate"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/kustomize/api/konfig"
+	"sigs.k8s.io/kustomize/api/krusty"
 	"sigs.k8s.io/kustomize/api/provider"
 	"sigs.k8s.io/kustomize/api/resource"
+	"sigs.k8s.io/kustomize/api/types"
+	"sigs.k8s.io/kustomize/kyaml/filesys"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/apis/config/validation"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/assets"
 )
 
-// ErrInvalidActuator is an error which is returned when creating an [Actuator]
+// ErrInvalidActuator is an error, which is returned when creating an [Actuator]
 // with invalid config settings.
 var ErrInvalidActuator = errors.New("invalid actuator")
+
+// ErrInvalidObject is an error, which is returned when an invalid object was
+// specified, e.g. an empty or nil object.
+var ErrInvalidObject = errors.New("invalid object specified")
 
 const (
 	// Name is the name of the actuator
@@ -211,15 +224,29 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 
 	enabledPacks := make([]config.Pack, 0)
 	disabledPacks := make([]config.Pack, 0)
-	for _, pack := range cfg.Spec.Packs {
-		if err := a.createManagedResourceForPack(ctx, ex.Namespace, collection, pack); err != nil {
-			return err
+	for _, packSpec := range cfg.Spec.Packs {
+		if !collection.PackExists(packSpec.Name, packSpec.Version) {
+			return fmt.Errorf("pack %s@%s does not exist", packSpec.Name, packSpec.Version)
 		}
-		enabledPacks = append(enabledPacks, pack)
+
+		packAsset, err := collection.GetPack(packSpec.Name, packSpec.Version)
+		if err != nil {
+			return fmt.Errorf("unable to get pack %s@%s: %w", packSpec.Name, packSpec.Version, err)
+		}
+
+		logger.Info(
+			"Reconciling pack",
+			"pack_name", packSpec.Name,
+			"pack_version", packSpec.Version,
+			"cluster", cluster.ObjectMeta.Name,
+		)
+		if err := a.reconcilePack(ctx, cluster, packSpec, packAsset); err != nil {
+			return fmt.Errorf("unable to reconcile %s@%s: %w", packSpec.Name, packSpec.Version, err)
+		}
+		enabledPacks = append(enabledPacks, packSpec)
 	}
 
-	// Delete ManagedResources for packs, which are have not been
-	// configured.
+	// Delete ManagedResources for packs, which have not been configured.
 	for _, pack := range collection.Packs {
 		if !slices.ContainsFunc(enabledPacks, func(item config.Pack) bool {
 			return item.Name == pack.Name && item.Version == pack.Version
@@ -238,74 +265,55 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 	return nil
 }
 
-// createManagedResourceForPack creates a new ManagedResource with the resources
-// provided by the pack.
-func (a *Actuator) createManagedResourceForPack(ctx context.Context, shootNamespace string, collection *assets.Collection, packConfig config.Pack) error {
-	if !collection.PackExists(packConfig.Name, packConfig.Version) {
-		return fmt.Errorf("pack %s@%s does not exist", packConfig.Name, packConfig.Version)
+// reconcilePack reconciles the given pack.
+func (a *Actuator) reconcilePack(ctx context.Context, cluster *extensions.Cluster, packSpec config.Pack, packAsset *assets.Pack) error {
+	if cluster == nil {
+		return fmt.Errorf("%w: cluster is nil", ErrInvalidObject)
+	}
+	if packAsset == nil {
+		return fmt.Errorf("%w: pack asset is nil", ErrInvalidObject)
 	}
 
-	pack, err := collection.GetPack(packConfig.Name, packConfig.Version)
+	// Create a kustomization filesystem for the pack resources
+	fs, err := a.kustomizeFilesystemForPack(ctx, cluster, packSpec, packAsset)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to create kustomize filesystem for %s@%s: %w", packSpec.Name, packSpec.Version, err)
 	}
 
+	// Build the resources
+	kustomizer := krusty.MakeKustomizer(krusty.MakeDefaultOptions())
+	resMap, err := kustomizer.Run(fs, packAsset.BaseDir)
+	if err != nil {
+		return fmt.Errorf("unable to render kustomization for %s@%s: %w", packSpec.Name, packSpec.Version, err)
+	}
+
+	// Register resources with the Managed Resources registry
 	registry := managedresources.NewRegistry(
 		kubernetes.ShootScheme,
 		kubernetes.ShootCodec,
 		kubernetes.ShootSerializer,
 	)
-
-	// Register pack resources with the registry
-	for _, packResource := range pack.Resources {
-		resourceData, err := packResource.Read()
+	for idx, r := range resMap.Resources() {
+		name := r.GetName()
+		gvk := r.GetGvk()
+		data, err := r.AsYAML()
 		if err != nil {
-			return fmt.Errorf("unable to read pack resource %s", packResource.Path)
+			return fmt.Errorf("unable to marshal %s %s: %w", name, gvk.String(), err)
 		}
 
-		// Create [resource.Resource] items from the pack resource.
-		// Take into account that a single pack resource may contain
-		// multiple Kubernetes resources.
-		resourceItems, err := a.resourceFactory.SliceFromBytes(resourceData)
-		if err != nil {
-			return fmt.Errorf("unable to create resource from %s: %w", packResource.Path, err)
-		}
-
-		// Adjust the namespace for each namespace-scoped resources.
-		for idx, r := range resourceItems {
-			gvk := r.GetGvk()
-			if !gvk.IsClusterScoped() {
-				// Gardener uses [metav1.NamespaceSystem] as a
-				// system namespace for Gardener-related
-				// components.
-				//
-				// Any resource provided by a pack will be
-				// installed in the the Gardener system
-				// namespace as well.
-				if err := r.SetNamespace(metav1.NamespaceSystem); err != nil {
-					return fmt.Errorf("unable to set namespace for %s: %w", packResource.Path, err)
-				}
-			}
-
-			// ... and register
-			data, err := r.AsYAML()
-			if err != nil {
-				return fmt.Errorf("unable to marshal %s: %w", packResource.Path, err)
-			}
-
-			registry.AddSerialized(
-				filepath.Join(packResource.Path, strconv.Itoa(idx)),
-				data,
-			)
-		}
+		registry.AddSerialized(
+			filepath.Join(packAsset.BaseDir, strconv.Itoa(idx)),
+			data,
+		)
 	}
 
 	data, err := registry.SerializedObjects()
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to get registry resources: %w", err)
 	}
 
-	mrName := fmt.Sprintf("%s-%s", ManagedResourcePrefix, pack.Name)
+	mrName := fmt.Sprintf("%s-%s", ManagedResourcePrefix, packAsset.Name)
+	shootNamespace := cluster.Shoot.Status.TechnicalID
 
 	return managedresources.CreateForShoot(
 		ctx,
@@ -316,6 +324,146 @@ func (a *Actuator) createManagedResourceForPack(ctx context.Context, shootNamesp
 		false,
 		data,
 	)
+}
+
+// kustomizeFilesystemForPack creates a [filesys.FileSystem], which contains the
+// resources from the given [assets.Pack] and any patches, which have been
+// specified as part of the [config.Pack] spec.
+func (a *Actuator) kustomizeFilesystemForPack(ctx context.Context, cluster *extensions.Cluster, packSpec config.Pack, packAsset *assets.Pack) (filesys.FileSystem, error) {
+	if cluster == nil {
+		return nil, fmt.Errorf("%w: cluster is nil", ErrInvalidObject)
+	}
+	if packAsset == nil {
+		return nil, fmt.Errorf("%w: pack asset is nil", ErrInvalidObject)
+	}
+
+	fs := filesys.MakeFsInMemory()
+	if err := fs.MkdirAll(packAsset.BaseDir); err != nil {
+		return nil, fmt.Errorf("unable to create pack base dir: %w", err)
+	}
+
+	// Write pack resources into the filesystem
+	resources := make([]string, 0)
+	for _, packResource := range packAsset.Resources {
+		resourceData, err := packResource.Read()
+		if err != nil {
+			return nil, fmt.Errorf("unable to read pack resource %s", packResource.Path)
+		}
+
+		if err := fs.WriteFile(packResource.Path, resourceData); err != nil {
+			return nil, fmt.Errorf("unable to write resource data for %s: %w", packResource.Path, err)
+		}
+		resources = append(resources, filepath.Base(packResource.Path))
+	}
+
+	// Append patches, if any. The patches are fetched from the referenced
+	// resource secrets.
+	patches := make([]types.Patch, 0)
+	for _, patchSpec := range packSpec.Patches {
+		secret, err := a.secretFromResourceRef(ctx, patchSpec.ResourceRef, cluster.Shoot)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to get patch from referenced resource %s for %s@%s: %w",
+				patchSpec.ResourceRef,
+				packSpec.Name,
+				packSpec.Version,
+				err,
+			)
+		}
+
+		// Assemble the patch from the referenced resources
+		for key, patchData := range secret.Data {
+			patchFile := fmt.Sprintf("patch-%s-%s", secret.Name, key)
+			if err := fs.WriteFile(filepath.Join(packAsset.BaseDir, patchFile), patchData); err != nil {
+				return nil, fmt.Errorf(
+					"unable to write patch from referenced resource %s/%s for %s@%s: %w",
+					patchSpec.ResourceRef,
+					key,
+					packSpec.Name,
+					packSpec.Version,
+					err,
+				)
+			}
+			patches = append(
+				patches,
+				types.Patch{
+					Path:   patchFile,
+					Target: patchSpec.Target,
+				},
+			)
+		}
+	}
+
+	// TODO(dnaeon): add common labels to indicate that we are managing this resource from a pack
+	kustomization := types.Kustomization{
+		// Gardener uses [metav1.NamespaceSystem] as a system namespace
+		// for Gardener-related components.
+		//
+		// Any resource provided by a pack will be installed in the the
+		// Gardener system namespace as well.
+		//
+		// As of today we cannot use a different namespace, because of
+		// the following.
+		//
+		// https://github.com/gardener/gardener/issues/14342
+		// https://github.com/gardener/gardener/pull/14335
+		Namespace: metav1.NamespaceSystem,
+		Resources: resources,
+		BuildMetadata: []string{
+			types.OriginAnnotations,
+		},
+		Patches: patches,
+	}
+
+	kustomizationData, err := yaml.Marshal(kustomization)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal kustomization file: %w", err)
+	}
+	kustomizationPath := filepath.Join(packAsset.BaseDir, konfig.DefaultKustomizationFileName())
+	if err := fs.WriteFile(kustomizationPath, kustomizationData); err != nil {
+		return nil, fmt.Errorf("unable to write kustomization file: %w", err)
+	}
+
+	return fs, nil
+}
+
+// secretFromResourceRef reads a [corev1.Secret] from the given referenced
+// resource name in the [gardencorev1beta1.Shoot] object.
+func (a *Actuator) secretFromResourceRef(ctx context.Context, resourceName string, shoot *gardencorev1beta1.Shoot) (*corev1.Secret, error) {
+	if shoot == nil {
+		return nil, fmt.Errorf("%w: shoot is nil", ErrInvalidObject)
+	}
+
+	shootNamespace := shoot.Status.TechnicalID
+	idx := slices.IndexFunc(shoot.Spec.Resources, func(item gardencorev1beta1.NamedResourceReference) bool {
+		return item.Name == resourceName &&
+			item.ResourceRef.Kind == "Secret" &&
+			item.ResourceRef.APIVersion == corev1.SchemeGroupVersion.String()
+	})
+
+	if idx == -1 {
+		return nil, fmt.Errorf("resource reference %s does not exist", resourceName)
+	}
+
+	secretName := v1beta1constants.ReferencedResourcesPrefix + resourceName
+	var secret corev1.Secret
+	objKey := client.ObjectKey{
+		Name:      secretName,
+		Namespace: shootNamespace,
+	}
+	if err := a.client.Get(ctx, objKey, &secret); err != nil {
+		eerr := fmt.Errorf(
+			"unable to get secret %s/%s from resource ref %s: %w",
+			shootNamespace,
+			secretName,
+			resourceName,
+			err,
+		)
+
+		return nil, eerr
+	}
+
+	return &secret, nil
 }
 
 // Delete deletes any resources managed by the [Actuator]. This method
