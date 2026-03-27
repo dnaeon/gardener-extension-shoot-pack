@@ -5,6 +5,8 @@
 package config
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/kustomize/api/types"
 )
@@ -29,6 +31,11 @@ type Pack struct {
 
 	// Patches specifies a list of optional patches.
 	Patches []PatchSpec
+}
+
+// String implements the [fmt.Stringer] interface.
+func (p *Pack) String() string {
+	return fmt.Sprintf("%s@%s", p.Name, p.Version)
 }
 
 // PackConfigSpec defines the desired state of [PackConfig]
