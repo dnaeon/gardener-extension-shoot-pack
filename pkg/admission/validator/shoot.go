@@ -47,13 +47,29 @@ func IgnoreExtensionNotFound(err error) error {
 type shootValidator struct {
 	decoder       runtime.Decoder
 	extensionType string
+	collection    *assets.Collection
 }
 
 var _ extensionswebhook.Validator = &shootValidator{}
 
+// Option is a function which configures the shoot validator.
+type Option func(v *shootValidator) error
+
+// WithPackCollection is an [Option] which configures the shoot validator to use
+// the given pack collection.
+func WithPackCollection(collection *assets.Collection) Option {
+	opt := func(a *shootValidator) error {
+		a.collection = collection
+
+		return nil
+	}
+
+	return opt
+}
+
 // newShootValidator returns a new [shootValidator], which implements the
 // [extensionswebhook.Validator] interface.
-func newShootValidator(decoder runtime.Decoder) (*shootValidator, error) {
+func newShootValidator(decoder runtime.Decoder, opts ...Option) (*shootValidator, error) {
 	validator := &shootValidator{
 		decoder:       decoder,
 		extensionType: packactuator.ExtensionType,
@@ -63,13 +79,27 @@ func newShootValidator(decoder runtime.Decoder) (*shootValidator, error) {
 		return nil, fmt.Errorf("invalid decoder specified for shoot validator %s", validator.extensionType)
 	}
 
+	for _, opt := range opts {
+		if err := opt(validator); err != nil {
+			return nil, err
+		}
+	}
+
+	if validator.collection == nil {
+		collection, err := assets.New(assets.FS, assets.WithSkipVerify(false))
+		if err != nil {
+			return nil, err
+		}
+		validator.collection = collection
+	}
+
 	return validator, nil
 }
 
 // NewShootValidator returns a new [extensionswebhook.Validator] for
 // [core.Shoot] objects.
-func NewShootValidator(decoder runtime.Decoder) (extensionswebhook.Validator, error) {
-	return newShootValidator(decoder)
+func NewShootValidator(decoder runtime.Decoder, opts ...Option) (extensionswebhook.Validator, error) {
+	return newShootValidator(decoder, opts...)
 }
 
 // Validate implements the [extensionswebhook.Validator] interface.
@@ -134,12 +164,8 @@ func (v *shootValidator) validateExtension(newObj *gardencore.Shoot, _ *gardenco
 		return fmt.Errorf("invalid extension configuration for %s: %w", v.extensionType, err)
 	}
 
-	collection, err := assets.New(assets.FS, assets.WithSkipVerify(false))
-	if err != nil {
-		return err
-	}
 	for _, packSpec := range cfg.Spec.Packs {
-		if !collection.PackExists(packSpec.Name, packSpec.Version) {
+		if !v.collection.PackExists(packSpec.Name, packSpec.Version) {
 			return fmt.Errorf("pack %s does not exist", packSpec.String())
 		}
 
@@ -167,9 +193,9 @@ func (v *shootValidator) validateExtension(newObj *gardencore.Shoot, _ *gardenco
 
 // NewShootValidatorWebhook returns a new validating [extensionswebhook.Webhook]
 // for [core.Shoot] objects.
-func NewShootValidatorWebhook(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
+func NewShootValidatorWebhook(mgr manager.Manager, opts ...Option) (*extensionswebhook.Webhook, error) {
 	decoder := serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder()
-	validator, err := newShootValidator(decoder)
+	validator, err := newShootValidator(decoder, opts...)
 	if err != nil {
 		return nil, err
 	}

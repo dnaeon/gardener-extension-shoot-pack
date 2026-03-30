@@ -466,7 +466,9 @@ func runWebhookServer(ctx context.Context, cmd *cli.Command) error {
 	// Webhooks to be registered
 	webhooks := make([]*extensionswebhook.Webhook, 0)
 	webhookFuncs := []func(m ctrl.Manager) (*extensionswebhook.Webhook, error){
-		admissionvalidator.NewShootValidatorWebhook,
+		func(m ctrl.Manager) (*extensionswebhook.Webhook, error) {
+			return admissionvalidator.NewShootValidatorWebhook(m)
+		},
 	}
 
 	for _, webhookFunc := range webhookFuncs {
