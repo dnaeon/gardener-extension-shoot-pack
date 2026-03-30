@@ -48,7 +48,7 @@ func Validate(cfg config.PackConfig) error {
 			)
 		}
 
-		// Ensure that no duplicates exist
+		// Ensure that no duplicate packs exist
 		seenIdx := slices.IndexFunc(seenPacks, func(item seenPack) bool {
 			return item.name == pack.Name && item.version == pack.Version
 		})
@@ -71,6 +71,7 @@ func Validate(cfg config.PackConfig) error {
 		}
 		seenPacks = append(seenPacks, seen)
 
+		// Validate patch specs
 		for patchIdx, patch := range pack.Patches {
 			if patch.ResourceRef == "" {
 				allErrs = append(

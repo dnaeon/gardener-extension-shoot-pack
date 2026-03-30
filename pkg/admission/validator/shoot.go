@@ -12,7 +12,9 @@ import (
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core"
+	gardencore "github.com/gardener/gardener/pkg/apis/core"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -72,11 +74,11 @@ func NewShootValidator(decoder runtime.Decoder) (extensionswebhook.Validator, er
 
 // Validate implements the [extensionswebhook.Validator] interface.
 func (v *shootValidator) Validate(ctx context.Context, newObj, oldObj client.Object) error {
-	newShoot, ok := newObj.(*core.Shoot)
+	newShoot, ok := newObj.(*gardencore.Shoot)
 	if !ok {
 		return fmt.Errorf("invalid object type: %T", newObj)
 	}
-	oldShoot, ok := oldObj.(*core.Shoot)
+	oldShoot, ok := oldObj.(*gardencore.Shoot)
 	if !ok {
 		oldShoot = nil
 	}
@@ -90,17 +92,17 @@ func (v *shootValidator) Validate(ctx context.Context, newObj, oldObj client.Obj
 
 // getExtension returns the [core.Extension] by extracting it from the given
 // [core.Shoot] object.
-func (v *shootValidator) getExtension(obj *core.Shoot) (core.Extension, error) {
+func (v *shootValidator) getExtension(obj *gardencore.Shoot) (gardencore.Extension, error) {
 	if obj == nil {
-		return core.Extension{}, errors.New("invalid shoot resource provided")
+		return gardencore.Extension{}, errors.New("invalid shoot resource provided")
 	}
 
-	idx := slices.IndexFunc(obj.Spec.Extensions, func(ext core.Extension) bool {
+	idx := slices.IndexFunc(obj.Spec.Extensions, func(ext gardencore.Extension) bool {
 		return ext.Type == v.extensionType
 	})
 
 	if idx == -1 {
-		return core.Extension{}, fmt.Errorf("%w: %s", ErrExtensionNotFound, v.extensionType)
+		return gardencore.Extension{}, fmt.Errorf("%w: %s", ErrExtensionNotFound, v.extensionType)
 	}
 
 	return obj.Spec.Extensions[idx], nil
@@ -108,7 +110,7 @@ func (v *shootValidator) getExtension(obj *core.Shoot) (core.Extension, error) {
 
 // validateExtension validates the extension configuration from the given
 // [core.Shoot] specs.
-func (v *shootValidator) validateExtension(newObj *core.Shoot, _ *core.Shoot) error {
+func (v *shootValidator) validateExtension(newObj *gardencore.Shoot, _ *gardencore.Shoot) error {
 	ext, err := v.getExtension(newObj)
 	if err != nil {
 		return IgnoreExtensionNotFound(err)
@@ -136,9 +138,27 @@ func (v *shootValidator) validateExtension(newObj *core.Shoot, _ *core.Shoot) er
 	if err != nil {
 		return err
 	}
-	for _, pack := range cfg.Spec.Packs {
-		if !collection.PackExists(pack.Name, pack.Version) {
-			return fmt.Errorf("pack %s@%s does not exist", pack.Name, pack.Version)
+	for _, packSpec := range cfg.Spec.Packs {
+		if !collection.PackExists(packSpec.Name, packSpec.Version) {
+			return fmt.Errorf("pack %s does not exist", packSpec.String())
+		}
+
+		// Validate patches, which are described by referenced resources stored
+		// as secrets.
+		for _, patchSpec := range packSpec.Patches {
+			idx := slices.IndexFunc(newObj.Spec.Resources, func(item gardencore.NamedResourceReference) bool {
+				return item.Name == patchSpec.ResourceRef &&
+					item.ResourceRef.Kind == "Secret" &&
+					item.ResourceRef.APIVersion == corev1.SchemeGroupVersion.String()
+			})
+
+			if idx == -1 {
+				return fmt.Errorf(
+					"pack %s uses patch which refers to a non-existing secret resource %s",
+					packSpec.String(),
+					patchSpec.ResourceRef,
+				)
+			}
 		}
 	}
 
