@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -41,6 +42,18 @@ import (
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/apis/config/validation"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/assets"
+)
+
+const (
+	// PackLabelPrefix is the prefix for labels used by the extension.
+	PackLabelPrefix = "pack.extensions.gardener.cloud/"
+	// PackNameLabel is the label added to pack resources, which specifies
+	// the name of the pack from which resources originate from.
+	PackNameLabel = PackLabelPrefix + "name"
+	// PackVersionLabel is the label added to pack resources, which
+	// specifies the version of the pack from which resources originate
+	// from.
+	PackVersionLabel = PackLabelPrefix + "version"
 )
 
 // ErrInvalidActuator is an error, which is returned when creating an [Actuator]
@@ -317,6 +330,17 @@ func (a *Actuator) reconcilePack(ctx context.Context, cluster *extensions.Cluste
 		// [metav1.NamespaceSystem].
 		if gvk.Kind == "Namespace" {
 			continue
+		}
+
+		// Add pack labels
+		labels := r.GetLabels()
+		extraLabels := map[string]string{
+			PackNameLabel:    packAsset.Name,
+			PackVersionLabel: packAsset.Version,
+		}
+		maps.Copy(labels, extraLabels)
+		if err := r.SetLabels(labels); err != nil {
+			return fmt.Errorf("unable to set labels for %s %s: %w", name, gvk.String(), err)
 		}
 
 		data, err := r.AsYAML()
