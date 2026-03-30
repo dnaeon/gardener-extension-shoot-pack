@@ -186,6 +186,11 @@ func New(fileSystem fs.FS, opts ...Option) (*Collection, error) {
 			resources = append(resources, resource)
 		}
 
+		// Skip packs which don't provide any resources
+		if len(resources) == 0 {
+			continue
+		}
+
 		pack := &Pack{
 			Name:        packName,
 			Version:     packVersion,
