@@ -255,7 +255,6 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 			"Reconciling pack",
 			"pack_name", packSpec.Name,
 			"pack_version", packSpec.Version,
-			"cluster", cluster.ObjectMeta.Name,
 		)
 		if err := a.reconcilePack(ctx, cluster, packSpec, packAsset); err != nil {
 			return fmt.Errorf("unable to reconcile %s: %w", packSpec.String(), err)
