@@ -269,7 +269,7 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 			"pack_name", packSpec.Name,
 			"pack_version", packSpec.Version,
 		)
-		if err := a.reconcilePack(ctx, cluster, packSpec, packAsset); err != nil {
+		if err := a.reconcilePack(ctx, ex.Namespace, cluster, packSpec, packAsset); err != nil {
 			return fmt.Errorf("unable to reconcile %s: %w", packSpec.String(), err)
 		}
 		enabledPacks = append(enabledPacks, packSpec)
@@ -295,7 +295,7 @@ func (a *Actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 }
 
 // reconcilePack reconciles the given pack.
-func (a *Actuator) reconcilePack(ctx context.Context, cluster *extensions.Cluster, packSpec config.Pack, packAsset *assets.Pack) error {
+func (a *Actuator) reconcilePack(ctx context.Context, shootNamespace string, cluster *extensions.Cluster, packSpec config.Pack, packAsset *assets.Pack) error {
 	if cluster == nil {
 		return fmt.Errorf("%w: cluster is nil", ErrInvalidObject)
 	}
@@ -304,7 +304,7 @@ func (a *Actuator) reconcilePack(ctx context.Context, cluster *extensions.Cluste
 	}
 
 	// Create a kustomization filesystem for the pack resources
-	fs, err := a.kustomizeFilesystemForPack(ctx, cluster, packSpec, packAsset)
+	fs, err := a.kustomizeFilesystemForPack(ctx, shootNamespace, cluster, packSpec, packAsset)
 	if err != nil {
 		return fmt.Errorf("unable to create kustomize filesystem for %s: %w", packSpec.String(), err)
 	}
@@ -360,7 +360,6 @@ func (a *Actuator) reconcilePack(ctx context.Context, cluster *extensions.Cluste
 	}
 
 	mrName := fmt.Sprintf("%s-%s", ManagedResourcePrefix, packAsset.Name)
-	shootNamespace := cluster.Shoot.Status.TechnicalID
 
 	return managedresources.CreateForShoot(
 		ctx,
@@ -376,7 +375,7 @@ func (a *Actuator) reconcilePack(ctx context.Context, cluster *extensions.Cluste
 // kustomizeFilesystemForPack creates a [filesys.FileSystem], which contains the
 // resources from the given [assets.Pack] and any patches, which have been
 // specified as part of the [config.Pack] spec.
-func (a *Actuator) kustomizeFilesystemForPack(ctx context.Context, cluster *extensions.Cluster, packSpec config.Pack, packAsset *assets.Pack) (filesys.FileSystem, error) {
+func (a *Actuator) kustomizeFilesystemForPack(ctx context.Context, shootNamespace string, cluster *extensions.Cluster, packSpec config.Pack, packAsset *assets.Pack) (filesys.FileSystem, error) {
 	if cluster == nil {
 		return nil, fmt.Errorf("%w: cluster is nil", ErrInvalidObject)
 	}
@@ -407,7 +406,7 @@ func (a *Actuator) kustomizeFilesystemForPack(ctx context.Context, cluster *exte
 	// resource secrets.
 	patches := make([]types.Patch, 0)
 	for _, patchSpec := range packSpec.Patches {
-		secret, err := a.secretFromResourceRef(ctx, patchSpec.ResourceRef, cluster.Shoot)
+		secret, err := a.secretFromResourceRef(ctx, shootNamespace, patchSpec.ResourceRef, cluster.Shoot)
 		if err != nil {
 			return nil, fmt.Errorf(
 				"unable to get patch from referenced resource %s for %s: %w",
@@ -474,12 +473,11 @@ func (a *Actuator) kustomizeFilesystemForPack(ctx context.Context, cluster *exte
 
 // secretFromResourceRef reads a [corev1.Secret] from the given referenced
 // resource name in the [gardencorev1beta1.Shoot] object.
-func (a *Actuator) secretFromResourceRef(ctx context.Context, resourceName string, shoot *gardencorev1beta1.Shoot) (*corev1.Secret, error) {
+func (a *Actuator) secretFromResourceRef(ctx context.Context, shootNamespace string, resourceName string, shoot *gardencorev1beta1.Shoot) (*corev1.Secret, error) {
 	if shoot == nil {
 		return nil, fmt.Errorf("%w: shoot is nil", ErrInvalidObject)
 	}
 
-	shootNamespace := shoot.Status.TechnicalID
 	idx := slices.IndexFunc(shoot.Spec.Resources, func(item gardencorev1beta1.NamedResourceReference) bool {
 		return item.Name == resourceName &&
 			item.ResourceRef.Kind == "Secret" &&
