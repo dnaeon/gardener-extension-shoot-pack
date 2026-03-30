@@ -126,6 +126,10 @@ func WithSkipVerify(val bool) Option {
 //	         ├── pvc.yaml
 //	         └── statefulset.yaml
 func New(fileSystem fs.FS, opts ...Option) (*Collection, error) {
+	if fileSystem == nil {
+		return nil, errors.New("invalid filesystem specified")
+	}
+
 	topLevelDirs, err := fs.Glob(fileSystem, "packs/*/*")
 	if err != nil {
 		return nil, err
