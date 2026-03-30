@@ -7,16 +7,17 @@ package validation_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/kustomize/api/types"
+	"sigs.k8s.io/kustomize/kyaml/resid"
 
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/apis/config/validation"
 )
 
 var _ = Describe("Validation Tests", Ordered, func() {
-	It("should fail on empty config", func() {
+	It("should fail with an empty config", func() {
 		cfg := config.PackConfig{}
-		err := validation.Validate(cfg)
-		Expect(err).Should(HaveOccurred())
+		Expect(validation.Validate(cfg)).ShouldNot(Succeed())
 	})
 
 	It("should fail with an empty pack name", func() {
@@ -24,13 +25,13 @@ var _ = Describe("Validation Tests", Ordered, func() {
 			Spec: config.PackConfigSpec{
 				Packs: []config.Pack{
 					{
+						// Pack name is missing here
 						Version: "42.0",
 					},
 				},
 			},
 		}
-		err := validation.Validate(cfg)
-		Expect(err).Should(HaveOccurred())
+		Expect(validation.Validate(cfg)).ShouldNot(Succeed())
 	})
 
 	It("should fail with an empty pack version", func() {
@@ -39,12 +40,55 @@ var _ = Describe("Validation Tests", Ordered, func() {
 				Packs: []config.Pack{
 					{
 						Name: "foobar",
+						// Pack version is missing here
 					},
 				},
 			},
 		}
-		err := validation.Validate(cfg)
-		Expect(err).Should(HaveOccurred())
+		Expect(validation.Validate(cfg)).ShouldNot(Succeed())
+	})
+
+	It("should fail with duplicate packs", func() {
+		cfg := config.PackConfig{
+			Spec: config.PackConfigSpec{
+				Packs: []config.Pack{
+					{
+						Name:    "foo",
+						Version: "v1.2.3",
+					},
+					{
+						Name:    "bar",
+						Version: "v1.2.3",
+					},
+					{
+						// A different version of foo is already specified
+						Name:    "foo",
+						Version: "v2.0.0",
+					},
+				},
+			},
+		}
+		Expect(validation.Validate(cfg)).ShouldNot(Succeed())
+	})
+
+	It("should fail with empty resource refs", func() {
+		cfg := config.PackConfig{
+			Spec: config.PackConfigSpec{
+				Packs: []config.Pack{
+					{
+						Name:    "foo",
+						Version: "v1.2.3",
+						Patches: []config.PatchSpec{
+							{
+								// Empty resource ref
+								ResourceRef: "",
+							},
+						},
+					},
+				},
+			},
+		}
+		Expect(validation.Validate(cfg)).ShouldNot(Succeed())
 	})
 
 	It("should successfully validate extension config", func() {
@@ -58,6 +102,22 @@ var _ = Describe("Validation Tests", Ordered, func() {
 					{
 						Name:    "bar",
 						Version: "42.0",
+						Patches: []config.PatchSpec{
+							// A dummy patch
+							{
+								ResourceRef: "my-resource-ref",
+								Target: &types.Selector{
+									ResId: resid.ResId{
+										Gvk: resid.Gvk{
+											Group:   "apps",
+											Version: "v1",
+											Kind:    "Deployment",
+										},
+										Name: "my-deployment-name",
+									},
+								},
+							},
+						},
 					},
 				},
 			},

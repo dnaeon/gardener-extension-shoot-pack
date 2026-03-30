@@ -48,9 +48,12 @@ func Validate(cfg config.PackConfig) error {
 			)
 		}
 
-		// Ensure that no duplicate packs exist
+		// Ensure that no duplicate packs exist.
+		//
+		// NOTE: Duplicates are being detected by pack name only, which
+		// prevents multiple versions of the same pack to be installed.
 		seenIdx := slices.IndexFunc(seenPacks, func(item seenPack) bool {
-			return item.name == pack.Name && item.version == pack.Version
+			return item.name == pack.Name
 		})
 
 		if seenIdx >= 0 {
