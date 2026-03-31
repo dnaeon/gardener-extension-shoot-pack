@@ -11,7 +11,6 @@ import (
 	"slices"
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
-	"github.com/gardener/gardener/pkg/apis/core"
 	gardencore "github.com/gardener/gardener/pkg/apis/core"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	corev1 "k8s.io/api/core/v1"
@@ -28,7 +27,7 @@ import (
 )
 
 // ErrExtensionNotFound is an error, which is returned when the extension was
-// not found in the [core.Shoot] spec.
+// not found in the [gardencore.Shoot] spec.
 var ErrExtensionNotFound = errors.New("extension not found")
 
 // IgnoreExtensionNotFound returns nil if err is [ErrExtensionNotFound],
@@ -42,7 +41,7 @@ func IgnoreExtensionNotFound(err error) error {
 }
 
 // shootValidator is an implementation of [extensionswebhook.Validator], which
-// validates the provider configuration of the extension from a [core.Shoot]
+// validates the provider configuration of the extension from a [gardencore.Shoot]
 // spec.
 type shootValidator struct {
 	decoder       runtime.Decoder
@@ -97,7 +96,7 @@ func newShootValidator(decoder runtime.Decoder, opts ...Option) (*shootValidator
 }
 
 // NewShootValidator returns a new [extensionswebhook.Validator] for
-// [core.Shoot] objects.
+// [gardencore.Shoot] objects.
 func NewShootValidator(decoder runtime.Decoder, opts ...Option) (extensionswebhook.Validator, error) {
 	return newShootValidator(decoder, opts...)
 }
@@ -120,8 +119,8 @@ func (v *shootValidator) Validate(ctx context.Context, newObj, oldObj client.Obj
 	return v.validateExtension(newShoot, oldShoot)
 }
 
-// getExtension returns the [core.Extension] by extracting it from the given
-// [core.Shoot] object.
+// getExtension returns the [gardencore.Extension] by extracting it from the given
+// [gardencore.Shoot] object.
 func (v *shootValidator) getExtension(obj *gardencore.Shoot) (gardencore.Extension, error) {
 	if obj == nil {
 		return gardencore.Extension{}, errors.New("invalid shoot resource provided")
@@ -139,7 +138,7 @@ func (v *shootValidator) getExtension(obj *gardencore.Shoot) (gardencore.Extensi
 }
 
 // validateExtension validates the extension configuration from the given
-// [core.Shoot] specs.
+// [gardencore.Shoot] specs.
 func (v *shootValidator) validateExtension(newObj *gardencore.Shoot, _ *gardencore.Shoot) error {
 	ext, err := v.getExtension(newObj)
 	if err != nil {
@@ -192,7 +191,7 @@ func (v *shootValidator) validateExtension(newObj *gardencore.Shoot, _ *gardenco
 }
 
 // NewShootValidatorWebhook returns a new validating [extensionswebhook.Webhook]
-// for [core.Shoot] objects.
+// for [gardencore.Shoot] objects.
 func NewShootValidatorWebhook(mgr manager.Manager, opts ...Option) (*extensionswebhook.Webhook, error) {
 	decoder := serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder()
 	validator, err := newShootValidator(decoder, opts...)
@@ -212,7 +211,7 @@ func NewShootValidatorWebhook(mgr manager.Manager, opts ...Option) (*extensionsw
 		Name:     name,
 		Path:     path,
 		Validators: map[extensionswebhook.Validator][]extensionswebhook.Type{
-			validator: {{Obj: &core.Shoot{}}},
+			validator: {{Obj: &gardencore.Shoot{}}},
 		},
 		Target: extensionswebhook.TargetSeed,
 		ObjectSelector: &metav1.LabelSelector{
