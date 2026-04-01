@@ -105,8 +105,10 @@ help: ## Display this help.
 $(LOCAL_BIN):
 	mkdir -p $(LOCAL_BIN)
 
+# Explicitely disable CGO due to an issue with github.com/valyala/gozstd.
+# See the comments of the `test' target.
 $(BINARY): $(SRC_DIRS) $(PACK_BASE_DIRS) | $(LOCAL_BIN)
-	$(GOCMD) build \
+	env CGO_ENABLED=0 $(GOCMD) build \
 		-o $(LOCAL_BIN)/ \
 		-ldflags="-X '$(GO_MODULE)/pkg/version.Version=${VERSION}'" \
 		./cmd/extension
