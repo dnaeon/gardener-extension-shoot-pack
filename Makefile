@@ -163,13 +163,31 @@ gofix:  ## Run go fix and apply suggested changes.
 check-gofix:  ## Run go fix and check for suggested changes.
 	@$(GOCMD) fix -diff $(GO_MODULE)/...
 
+# The Go race detector requires that cgo is enabled (CGO_ENABLED=1) [1].
+#
+# However, there is an issue related to github.com/valyala/gozstd, which is
+# being pulled as a dependency from the various VictoriaMetrics/VictoriaLogs
+# packages, on which gardener/gardener depends.
+#
+# This issue causes tests to fail with the following errors.  See [2] and [3]
+# for more details. Other users have reported similar issues and have been
+# "fixing" it in a similar way. See [4] for additional details.
+#
+# /usr/bin/ld: /home/runner/go/pkg/mod/github.com/valyala/gozstd@v1.24.0/libzstd_linux_amd64.a(cover.o): warning: relocation against `stderr@@GLIBC_2.2.5' in read-only section `.text'
+# /usr/bin/ld: /home/runner/go/pkg/mod/github.com/valyala/gozstd@v1.24.0/libzstd_linux_amd64.a(zdict.o): relocation R_X86_64_PC32 against symbol `stderr@@GLIBC_2.2.5' can not be used when making a PDE object; recompile with -fPIE
+#
+# Because of that we need to explicitly disable the race detector during tests.
+#
+# [1]: https://go.dev/doc/articles/race_detector#Requirements
+# [2]: https://github.com/valyala/gozstd/issues/71
+# [3]: https://github.com/valyala/gozstd/issues/65
+# [4]: https://github.com/NixOS/nixpkgs/pull/461921
 .PHONY: test
 test:  ## Start envtest and run the unit tests.
 	@echo "Setting up envtest for Kubernetes version v$(ENVTEST_K8S_VERSION) ..."
 	@KUBEBUILDER_ASSETS="$$( $(GO_TOOL) setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCAL_BIN) -p path )" \
-		$(GOCMD) test \
+		env CGO_ENABLED=0 $(GOCMD) test \
 			-v \
-			-race \
 			-coverprofile=coverage.txt \
 			-covermode=atomic \
 			$(shell $(GOCMD) list ./pkg/... )
