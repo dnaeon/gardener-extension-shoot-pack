@@ -114,11 +114,19 @@ function _build_pack() {
   fi
 
   cd "${ASSETS_PKG}"
-  find "packs/${NAME}/${VERSION}" \
-       -type f \
-       -iname "${PACK_RESOURCES_GLOB}" \
-       -exec sha256sum {} \; | tee -a "${PACK_DIR}/${PACK_METADATA_SUMS}"
+  local _resources=""
+  _resources=$( find "packs/${NAME}/${VERSION}" \
+                     -type f \
+                     -iname "${PACK_RESOURCES_GLOB}" | sort )
+
+  while read -r _resource; do
+    if [[ -z "${_resource}" ]]; then
+       continue
+    fi
+    sha256sum "${_resource}" | tee -a "${PACK_DIR}/${PACK_METADATA_SUMS}"
+  done <<<"${_resources}"
   cd "${OLDPWD}"
+
   _msg_info "Pack ${NAME}@${VERSION} built successfully"
 }
 
