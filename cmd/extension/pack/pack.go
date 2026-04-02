@@ -14,6 +14,9 @@ import (
 	"text/template"
 
 	"github.com/urfave/cli/v3"
+	"sigs.k8s.io/kustomize/api/konfig"
+	"sigs.k8s.io/kustomize/api/types"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/gardener/gardener-extension-shoot-pack/pkg/assets"
 )
@@ -101,6 +104,11 @@ func New() *cli.Command {
 						Usage:    "dump pack to the specified path",
 						Required: true,
 						Aliases:  []string{"p"},
+					},
+					&cli.BoolFlag{
+						Name:    "with-kustomization",
+						Usage:   "create a kustomization.yaml for the pack",
+						Aliases: []string{"k"},
 					},
 				},
 				Action: runPackDump,
@@ -285,7 +293,9 @@ func runPackDump(ctx context.Context, c *cli.Command) error {
 	if err := os.MkdirAll(packBaseDir, os.FileMode(0755)); err != nil {
 		return err
 	}
+	withKustomization := c.Bool("with-kustomization")
 
+	resourceNames := make([]string, 0)
 	for _, resource := range pack.Resources {
 		data, err := resource.Read()
 		if err != nil {
@@ -294,6 +304,25 @@ func runPackDump(ctx context.Context, c *cli.Command) error {
 
 		filePath := filepath.Join(path, resource.Path)
 		if err := os.WriteFile(filePath, data, os.FileMode(0644)); err != nil {
+			return err
+		}
+		resourceNames = append(resourceNames, filepath.Base(resource.Path))
+	}
+
+	if withKustomization {
+		kustomization := types.Kustomization{
+			Resources: resourceNames,
+			BuildMetadata: []string{
+				types.OriginAnnotations,
+			},
+		}
+		kustomization.FixKustomization()
+		kustomizationPath := filepath.Join(path, pack.BaseDir, konfig.DefaultKustomizationFileName())
+		kustomizationData, err := yaml.Marshal(kustomization)
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(kustomizationPath, kustomizationData, os.FileMode(0644)); err != nil {
 			return err
 		}
 	}
