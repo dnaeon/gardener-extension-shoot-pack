@@ -458,6 +458,7 @@ func (a *Actuator) kustomizeFilesystemForPack(ctx context.Context, shootNamespac
 		},
 		Patches: patches,
 	}
+	kustomization.FixKustomization()
 
 	kustomizationData, err := yaml.Marshal(kustomization)
 	if err != nil {
