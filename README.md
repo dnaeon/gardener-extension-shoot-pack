@@ -18,6 +18,7 @@ The project repo uses the following code structure.
 | `cmd`            | Command-line application of the extension                                                 |
 | `pkg/admission`  | Implementations for the Gardener extension admission `Validator` and `Mutator` interfaces |
 | `pkg/apis`       | Extension API types, e.g. configuration spec, etc.                                        |
+| `pkg/assets`     | Provides the implementation of pack assets and builtin packs                              |
 | `pkg/actuator`   | Implementations for the Gardener Extension `Actuator` interfaces                          |
 | `pkg/controller` | Utility wrappers for creating Kubernetes reconcilers for Gardener `Actuators`             |
 | `pkg/heartbeat`  | Utility wrappers for creating heartbeat reconcilers for Gardener extensions               |
@@ -25,6 +26,7 @@ The project repo uses the following code structure.
 | `pkg/mgr`        | Utility wrappers for creating `controller-runtime` managers using functional options API  |
 | `pkg/version`    | Version metadata information about the extension                                          |
 | `internal/tools` | Go-based tools used for testing and linting the project                                   |
+| `specs`          | Contains the builtin `PACKAGE` specs                                                      |
 | `charts`         | Helm charts for deploying the extension                                                   |
 | `examples`       | Example Kubernetes resources, which can be used in a dev environment                      |
 | `test`           | Various files (e.g. schemas, CRDs, etc.), used during testing                             |
