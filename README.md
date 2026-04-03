@@ -54,6 +54,12 @@ run the following command.
 make check-examples
 ```
 
+The `pack-verify` target verifies all packs.
+
+``` shell
+make pack-verify
+```
+
 # Documentation
 
 Make sure to check the following documents for more information about Gardener
