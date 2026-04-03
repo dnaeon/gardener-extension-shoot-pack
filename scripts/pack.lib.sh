@@ -24,6 +24,9 @@ export PACK_SPEC_REQUIRED_VARS=(
     DESCRIPTION
 )
 
+export PACK_SPEC_NAME_REGEX='^[[:alnum:]._+@-]*$'
+export PACK_SPEC_VERSION_REGEX='^[[:alnum:]._+@-]*$'
+
 # The namespace in which packs get installed is `kube-system', since this is the
 # system namespace used by components deployed by Gardener in shoot clusters.
 #

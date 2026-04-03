@@ -79,6 +79,14 @@ function _verify_pack() {
     fi
   done
 
+  if [[ ! "${NAME}" =~ ${PACK_SPEC_NAME_REGEX} ]]; then
+    _msg_error "_verify_pack: NAME is invalid in pack spec @ ${_pack_spec_file}" 1
+  fi
+
+  if [[ ! "${VERSION}" =~ ${PACK_SPEC_VERSION_REGEX} ]]; then
+    _msg_error "_verify_pack: VERSION is invalid in pack spec @ ${_pack_spec_file}" 1
+  fi
+
   _msg_info "Verifying ${NAME}@${VERSION} pack ..."
 
   # Each pack spec must define a `package()' function

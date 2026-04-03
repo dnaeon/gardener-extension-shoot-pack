@@ -80,6 +80,14 @@ function _build_pack() {
     fi
   done
 
+  if [[ ! "${NAME}" =~ ${PACK_SPEC_NAME_REGEX} ]]; then
+    _msg_error "_build_pack: NAME is invalid in pack spec @ ${_pack_spec_file}" 1
+  fi
+
+  if [[ ! "${VERSION}" =~ ${PACK_SPEC_VERSION_REGEX} ]]; then
+    _msg_error "_build_pack: VERSION is invalid in pack spec @ ${_pack_spec_file}" 1
+  fi
+
   # Each pack spec must define a `package()' function
   if [[ $( type -t package ) != "function" ]]; then
     _msg_error "_build_pack: ${_pack_spec_file} does not provide a package() function" 1
