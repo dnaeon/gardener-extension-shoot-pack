@@ -1,4 +1,9 @@
-# PACKAGE format
+# Packs
+
+This document provides information about how to create, manage, and test
+packs. It also describes the format of the `PACKAGE` spec.
+
+# PACKAGE spec
 
 Each pack is described by a `PACKAGE` spec. Package specs reside in the [specs directory](../specs/)
 of the repo.
@@ -19,8 +24,6 @@ overlay, etc.
 Since the resources that make up a pack are plain Kubernetes resources, the
 packs allow us to consume upstream Kubernetes projects (e.g. operators) and
 distribute them to Gardener shoot clusters in a generic and agnostic way.
-
-## PACKAGE spec format
 
 Lets use the `PACKAGE` spec for [CloudNativePG Operator](../specs/cloudnativepg)
 as an example and describe it. This is what the spec looks like.
@@ -154,3 +157,60 @@ links.
 - https://gardener.cloud/docs/getting-started/ca-components/#managedresources
 - https://github.com/gardener/gardener/issues/14342
 - https://github.com/gardener/gardener/pull/14335
+
+# Creating a new pack
+
+First, we will create a new source directory for our pack.
+
+``` shell
+mkdir specs/my-pack
+```
+
+Considering that you have [built the extension locally](./development.md) we can
+initialize a new pack spec using the following command.
+
+``` shell
+bin/extension pack init \
+    --name my-pack \
+    --version v0.1.0 \
+    --description 'My pack description' > specs/my-pack/PACKAGE
+```
+
+The command above will generate a spec template for you to edit.
+
+You can also check the [existing pack specs](../specs) for examples.
+
+# Building packs
+
+The [pack-build.sh](../scripts/pack-build.sh) script can be used to build a
+single pack.
+
+The following command will build the `my-pack` pack according to the `PACKAGE`
+spec.
+
+``` shell
+scripts/pack-build.sh build specs/my-pack
+```
+
+In order to build all packs we can use the `pack-build` target.
+
+``` shell
+make pack-build
+```
+
+# Verifying and testing packs
+
+The [pack-verify.sh](../scripts/pack-verify.sh) script is used for verifying and
+testing packs.
+
+In order to test a single pack we can use the following command.
+
+``` shell
+scripts/pack-verify.sh verify specs/my-pack
+```
+
+The `pack-verify` target can be used to test and verify all packs.
+
+``` shell
+make pack-verify
+```
