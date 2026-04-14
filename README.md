@@ -1,6 +1,7 @@
 # gardener-extension-shoot-pack
 
-The `gardener-extension-shoot-pack` repo provides operators pack.
+The `gardener-extension-shoot-pack` repo provides various Kubernetes packages
+(packs) for shoot clusters.
 
 # Requirements
 
@@ -11,26 +12,51 @@ The `gardener-extension-shoot-pack` repo provides operators pack.
 
 # Usage
 
+The table below provides a summary of the available packs, provided by the
+extension, which can be installed in shoot clusters.
+
+| Name                  | Version | Description                                                    |
+|-----------------------|---------|----------------------------------------------------------------|
+| `cnpg-operator`       | v1.20.0 | [CloudNativePG Operator](https://cloudnative-pg.io)            |
+| `prometheus-operator` | v0.89.0 | [Prometheus Operator](https://prometheus-operator.dev)         |
+| `valkey-operator`     | v0.0.61 | [Valkey Operator](https://docs.hyperspike.io/valkey-operator/) |
+| `cert-manager`        | v1.20.0 | [cert-manager](https://cert-manager.io)                        |
+
 You can enable the extension for a [Gardener Shoot cluster](https://gardener.cloud/docs/glossary/#gardener-glossary) by
 updating the `.spec.extensions` of your shoot manifest.
+
+The following example enables the extension for a shoot, in which the
+CloudNativePG and Prometheus Operators will be installed.
 
 ``` yaml
 ...
 
 spec:
   extensions:
-    - type: pack
+    - type: shoot-pack
       providerConfig:
         apiVersion: pack.extensions.gardener.cloud/v1alpha1
         kind: PackConfig
         spec:
-          foo: bar
+          packs:
+          - name: cnpg-operator
+            version: v1.28.1
+          - name: prometheus-operator
+            version: v0.89.0
 ```
+
+Resources provided by [packs can also be customized](./docs/customize-packs.md).
+
+You can also check the [example shoot spec](./examples/shoot.yaml) for a
+complete shoot manifest.
 
 # Development
 
 Check the [Development Guide](./docs/development.md) for more details about how
 to start developing this extension.
+
+The [Pack Guide](./docs/packs.md) provides information about how to create,
+manage, and test packs. It also describes the format of the `PACKAGE` spec.
 
 # Tests
 

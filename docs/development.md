@@ -103,7 +103,7 @@ make helm-load-chart
 ```
 
 In the [examples/dev-setup](./examples/dev-setup) directory you can find
-[kustomize](https://kustomize.io/]) resources, which can be used to create the
+[kustomize](https://kustomize.io/) resources, which can be used to create the
 `ControllerDeployment` and `ControllerRegistration` resources.
 
 For more information about `ControllerDeployment` and `ControllerRegistration`

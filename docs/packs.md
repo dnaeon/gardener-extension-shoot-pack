@@ -25,7 +25,7 @@ Since the resources that make up a pack are plain Kubernetes resources, the
 packs allow us to consume upstream Kubernetes projects (e.g. operators) and
 distribute them to Gardener shoot clusters in a generic and agnostic way.
 
-Lets use the `PACKAGE` spec for [CloudNativePG Operator](../specs/cloudnativepg)
+Let's use the `PACKAGE` spec for [CloudNativePG Operator](../specs/cloudnativepg)
 as an example and describe it. This is what the spec looks like.
 
 ``` shell
@@ -170,7 +170,7 @@ Considering that you have [built the extension locally](./development.md) we can
 initialize a new pack spec using the following command.
 
 ``` shell
-bin/extension pack init \
+extension pack init \
     --name my-pack \
     --version v0.1.0 \
     --description 'My pack description' > specs/my-pack/PACKAGE
@@ -213,4 +213,90 @@ The `pack-verify` target can be used to test and verify all packs.
 
 ``` shell
 make pack-verify
+```
+
+# Inspecting packs
+
+The following command will list the builtin packs.
+
+``` shell
+extension pack list
+```
+
+At the time of writing this document the following packs are shipped with the extension.
+
+``` shell
+ NAME                │ VERSION │ DESCRIPTION                                           │ RESOURCES
+─────────────────────┼─────────┼───────────────────────────────────────────────────────┼───────────
+ cert-manager        │ v1.20.0 │ Cert-manager operator for TLS certificates management │ 52
+ cnpg-operator       │ v1.28.1 │ CloudNativePG Operator                                │ 21
+ prometheus-operator │ v0.89.0 │ Prometheus Operator                                   │ 15
+ valkey-operator     │ v0.0.61 │ Valkey Operator                                       │ 10
+```
+
+The `pack list` sub-command can output in `json` format as well, e.g.
+
+``` shell
+extension pack list --format json
+```
+
+We can use the following command to list the resources of a pack.
+
+``` shell
+extension pack files --name cnpg-operator --version v1.28.1
+```
+
+This command will return the sha256 checksums for pack resources.
+
+``` shell
+extension pack sums --name cnpg-operator --version v1.28.1
+```
+
+In order to dump the resources of a pack on the filesystem we can run the
+following command.
+
+``` shell
+extension pack dump --name cnpg-operator --version v1.28.1 --path /some/path
+```
+
+The `pack dump` sub-command supports the `--with-kustomization` flag, which if
+specified will also include a `kustomization.yaml` file for the pack resources,
+e.g.
+
+``` shell
+extension pack dump --name cnpg-operator --version v1.28.1 --path /some/path --with-kustomization
+```
+
+This is what the pack looks like when saved on the filesystem.
+
+``` shell
+$ tree /some/path
+/some/path
+└── packs
+    └── cnpg-operator
+        └── v1.28.1
+            ├── clusterrole-extension-cloudnative-pg-edit.yaml
+            ├── clusterrole-extension-cloudnative-pg-view.yaml
+            ├── clusterrole-extension-cloudnative-pg.yaml
+            ├── clusterrolebinding-extension-cloudnative-pg.yaml
+            ├── configmap-cnpg-controller-manager-config.yaml
+            ├── configmap-cnpg-default-monitoring.yaml
+            ├── customresourcedefinition-backups.postgresql.cnpg.io.yaml
+            ├── customresourcedefinition-clusterimagecatalogs.postgresql.cnpg.io.yaml
+            ├── customresourcedefinition-clusters.postgresql.cnpg.io.yaml
+            ├── customresourcedefinition-databases.postgresql.cnpg.io.yaml
+            ├── customresourcedefinition-failoverquorums.postgresql.cnpg.io.yaml
+            ├── customresourcedefinition-imagecatalogs.postgresql.cnpg.io.yaml
+            ├── customresourcedefinition-poolers.postgresql.cnpg.io.yaml
+            ├── customresourcedefinition-publications.postgresql.cnpg.io.yaml
+            ├── customresourcedefinition-scheduledbackups.postgresql.cnpg.io.yaml
+            ├── customresourcedefinition-subscriptions.postgresql.cnpg.io.yaml
+            ├── deployment-extension-cloudnative-pg.yaml
+            ├── kustomization.yaml
+            ├── mutatingwebhookconfiguration-cnpg-mutating-webhook-configuration.yaml
+            ├── service-cnpg-webhook-service.yaml
+            ├── serviceaccount-extension-cloudnative-pg.yaml
+            └── validatingwebhookconfiguration-cnpg-validating-webhook-configuration.yaml
+
+4 directories, 22 files
 ```
